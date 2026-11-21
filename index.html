@@ -226,6 +226,17 @@ button.quiet{background:#101d2a}.nav{gap:.45rem}.nav button{background:#101c2a}.
 @media(max-width:710px){.studio-locker{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.locker-collectibles{grid-column:1/-1}.locker-collectibles .locker-poster,.locker-collectibles .locker-hook{max-width:240px}}
 @media(max-width:430px){.studio-locker{grid-template-columns:1fr}.locker-photo{max-height:315px}.locker-loadout .player-kit{grid-template-columns:repeat(2,minmax(0,1fr))}.locker-loadout .kit-thumb{width:35px}.studio-fitting.has-preview .fitting-photo{min-height:140px}}
 .player-card-expanded[data-tier="3"] .player-card-stage::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(125deg,transparent 22%,#ab8aff10 38%,#8fe7ff15 49%,transparent 71%)}
+
+.quick-sim .broadcast-layout{grid-template-columns:minmax(0,1fr) minmax(245px,.55fr)}
+.quick-sim .broadcast-feed .feed{max-height:500px}
+.sim-feature{min-height:108px;padding:.68rem .8rem;border-left:3px solid var(--gold);background:linear-gradient(110deg,#223952,#112035);border-radius:4px;margin-bottom:.65rem}
+.sim-feature .eyebrow{margin:0}.sim-feature h3{font-size:clamp(1.15rem,3vw,1.55rem);margin:.3rem 0}.sim-feature p:last-child{margin-bottom:.1rem}
+.sim-clock{font-size:1.13rem;color:var(--gold);font-variant-numeric:tabular-nums;font-weight:900}
+.sim-linescore{margin:.55rem 0 .7rem;font-variant-numeric:tabular-nums}
+.sim-linescore :is(th,td){padding:.23rem .34rem;text-align:center}.sim-linescore tr>:first-child{text-align:left}.sim-recap .sim-linescore{max-width:440px}
+.sim-buttons{justify-content:flex-end}.timed-feed .feed-divider{font-weight:900;color:var(--blue);background:#21394e;padding:.28rem .4rem;border-bottom:0;margin:.35rem 0 .1rem;border-radius:3px}
+.timed-feed li:not(.feed-divider){display:grid;grid-template-columns:3.45rem 1fr;gap:.15rem}.timed-feed li.no-clock{display:block}.timed-feed li b{font-variant-numeric:tabular-nums;color:var(--gold)}
+@media(max-width:720px){.quick-sim .broadcast-layout{grid-template-columns:1fr}.quick-sim .broadcast-feed .feed{max-height:340px}.sim-buttons{justify-content:flex-start}}
 </style>
 </head>
 <body>
@@ -1132,10 +1143,14 @@ function preView(){
 function board(home,away,score){
  return '<div class="scoreboard"><div>'+crest(home,true)+'<p><strong>'+teams[home].code+'</strong><br><small class="muted">'+teams[home].mascot+'</small></p></div><div class="score" aria-label="'+(score==='VS'?'Versus':score)+'">'+score+'</div><div>'+crest(away,true)+'<p><strong>'+teams[away].code+'</strong><br><small class="muted">'+teams[away].mascot+'</small></p></div></div>';
 }
-function addFeed(tag,text){match.feed.push([tag,text]);}
+function addFeed(tag,text){
+ const clock=match.sim?.feedClock;
+ match.feed.push(clock===null||clock===undefined?[tag,text]:[tag,text,clock]);
+}
 function startMatch(mode){
  const spotlight=career.phase==='playoffs'||career.gp%4===3;
  match={mode,team:career.team,opp:nextOpponent(),period:0,us:0,them:0,statGoals:0,statAgainst:0,feed:[],line:stats(),moment:null,extra:false,shootout:null,minutes:60,spotlight,highlightPeriod:career.games%3===1?2:3,playHistory:[],settled:false,highlights:0};
+ if(mode==='sim')match.sim={stage:0,queue:[],periods:[],paused:false,draining:false,current:null};
  addFeed('LIVE',teamName(match.team)+' and '+teamName(match.opp)+' are on the ice.');
  show('live');queuePeriod(600);
 }
@@ -1162,7 +1177,7 @@ function addGoal(side,credit){
   match.line.a++;
   addFeed(match.tag,playerName()+' sets up the goal · '+match.us+'–'+match.them+'.');
  }else addFeed(match.tag,teams[match.team].star+' scores for '+teams[match.team].code+' · '+match.us+'–'+match.them+'.');
- sound('horn');
+ if(!match.sim?.draining)sound('horn');
 }
 function scoringOdds(){
  const condition=(Math.min(career.energy,85)-85)*.0014+(career.chem-50)*.0025+career.hype*.028;
@@ -1171,21 +1186,24 @@ function scoringOdds(){
  const theirs=.42-(isGoalie()?talent*.55+skill('reflex')*.007:0);
  return [clamp(ours,.18,.78),clamp(theirs,.17,.72)];
 }
-function ordinaryPeriod(highlight){
- const [ours,theirs]=scoringOdds();
- const danger=isGoalie()&&highlight;
- if(danger)addFeed(match.tag,teams[match.opp].code+' is setting up a dangerous chance.');
-
- if(isGoalie())match.line.sv+=int(7,11);
- let scored=false;
+function rollPeriod(highlight){
+ const [ours,theirs]=scoringOdds(),goalie=isGoalie();
+ const saves=goalie?int(7,11):0,goals=[];
  for(let i=0;i<2;i++){
   if(Math.random()<ours){
-   const credit=isGoalie()?'':Math.random()<.68?(Math.random()<(career.role==='sniper'?.74:career.role==='playmaker'?.27:.5)?'goal':'assist'):'';
-   addGoal('us',credit);scored=true;
+   const credit=goalie?'':Math.random()<.68?(Math.random()<(career.role==='sniper'?.74:career.role==='playmaker'?.27:.5)?'goal':'assist'):'';
+   goals.push({side:'us',credit});
   }
-  if((!danger||i===0)&&Math.random()<theirs){addGoal('them');scored=true;}
+  if((!goalie||!highlight||i===0)&&Math.random()<theirs)goals.push({side:'them'});
  }
- if(!scored&&!highlight)addFeed(match.tag,isGoalie()?playerName()+' shuts the door through a scoreless period.':'Both clubs trade chances in a scoreless period.');
+ return {saves,goals};
+}
+function ordinaryPeriod(highlight){
+ const {saves,goals}=rollPeriod(highlight);
+ if(isGoalie()&&highlight)addFeed(match.tag,teams[match.opp].code+' is setting up a dangerous chance.');
+ match.line.sv+=saves;
+ goals.forEach(g=>addGoal(g.side,g.credit));
+ if(!goals.length&&!highlight)addFeed(match.tag,isGoalie()?playerName()+' shuts the door through a scoreless period.':'Both clubs trade chances in a scoreless period.');
 }
 const highlightInfo={
  breakaway:['Breakaway','Shoot at the open corner.','target'],
@@ -1202,6 +1220,7 @@ const highlightInfo={
  penalty:['Shootout attempt','Pick the open corner to score.','target']
 };
 function advanceGame(){
+ if(match.sim){nextQuickSimBeat();return;}
  if(match.period<3){
   match.period++;match.tag='P'+match.period;
   const play=match.mode==='action'&&(match.spotlight||match.period===match.highlightPeriod);
@@ -1273,11 +1292,12 @@ function concludeGame(){
  const featured=isGoalie()?(line.so||line.sv>=28):line.g+line.a>=2;
  const player=playerName(),a=teams[match.team].star,b=teams[match.opp].star;
  const stars=featured?[player,won?a:b,won?b:a]:won?[a,player,b]:[b,a,player];
- career.last={team:match.team,opp:match.opp,score:match.us+'–'+match.them,won,extra:match.extra,shootout:match.tag==='SO',xp,pay,stars,oldOvr,newOvr:overall(),milestone,line:{...line},feed:match.feed,celebration:match.celebration,rank:rankIndex()>before&&overall()>oldOvr?ranks[rankIndex()][0]:null};
+ career.last={team:match.team,opp:match.opp,score:match.us+'–'+match.them,won,extra:match.extra,shootout:match.tag==='SO',xp,pay,stars,oldOvr,newOvr:overall(),milestone,line:{...line},feed:match.feed,periods:match.sim?.periods,shootoutWinner:match.sim?.shootoutWinner,celebration:match.celebration,rank:rankIndex()>before&&overall()>oldOvr?ranks[rankIndex()][0]:null};
  persist();show('recap');
 }
 function unlock(id){if(!career.posters.includes(id))career.posters.push(id);}
 function liveView(){
+ if(match.sim)return quickSimView();
  const highlight=match.moment,outcome=match.presentation;
  return '<section class="broadcast-shell stack">'+liveScore()+'<div class="broadcast-layout"><div class="rink-stage">'+rinkCanvas()+
  (outcome?'<div class="rink-result '+(outcome.success?'success':'miss')+'" role="status">'+outcome.label+'</div>':
@@ -1286,7 +1306,14 @@ function liveView(){
  '<div class="panel broadcast-controls">'+(highlight?(highlight.challenge?challengeControls(highlight):momentView(highlight)):btn('fast-game',match.mode==='sim'?'Finish Quick Sim':'Continue broadcast','quiet'))+'</div></div></section>';
 }
 function feedView(feed){
- return '<ol class="feed" aria-label="Play-by-play" aria-live="polite">'+feed.map(([tag,line])=>'<li><b>'+tag+'</b> '+line+'</li>').join('')+'</ol>';
+ const timed=feed.some(entry=>entry.length>2);
+ let group=null;
+ const labels={LIVE:'Pre-game',P1:'First period',P2:'Second period',P3:'Third period',OT:'Overtime','2OT':'Second overtime',SO:'Shootout'};
+ return '<ol class="feed'+(timed?' timed-feed':'')+'" aria-label="Play-by-play" aria-live="polite">'+feed.map(([tag,line,clock])=>{
+  const heading=timed&&tag!==group?'<li class="feed-divider">'+(labels[tag]??tag)+'</li>':'';
+  group=tag;
+  return heading+'<li'+(timed&&!clock?' class="no-clock"':'')+'>'+(timed?(clock?'<b>'+clock+'</b> ':''):'<b>'+tag+'</b> ')+line+'</li>';
+ }).join('')+'</ol>';
 }
 function launchMoment(id,round=1,successes=0){
  let [title,instruction,kind]=highlightInfo[id];
@@ -1462,6 +1489,7 @@ function paintBroadcast(now=performance.now()){
  const outcome=match.presentation,own=playerPalette(),opp=teams[match.opp],still=reduceMotion();
  const outcomeTime=outcome?clamp((now-outcome.at)/420,0,1):0;
  iceScene(c,outcome?.goal===true||!m&&match.lastGoal?.period===match.period);
+ if(match.sim){paintQuickSimRink(c,now,own,opp);return;}
  if(m?.challenge){paintCareerChallenge(c,m,now,outcome,own,opp);return;}
  if(!m){
   rinkSkater(c,475,235,.95,opp,true);
@@ -1508,8 +1536,8 @@ function paintBroadcast(now=performance.now()){
  }else rinkPuck(c,from[0]+(fake?(m.fake-1)*21:0),from[1]);
 }
 function liveScore(){
- const period=match.practice?'Practice':match.period===0?'Warmup':match.tag==='SO'?(match.shootout?'SO '+match.shootout.us+'–'+match.shootout.them:'Shootout'):match.period===4?'Overtime':'Period '+match.period;
- const recent=match.lastGoal?.period===match.period?match.lastGoal.side:'';
+ const period=match.practice?'Practice':match.period===0?'Warmup':match.tag==='SO'?(match.shootout?'SO '+match.shootout.us+'–'+match.shootout.them:'Shootout'):match.period===4?(match.sim?.stage===5?'2OT':'Overtime'):'Period '+match.period;
+ const recent=match.lastGoal?.period===match.period&&(!match.sim||match.sim.current?.kind==='goal')?match.lastGoal.side:'';
  const side=(id,n,which)=>'<div class="broadcast-team '+(recent===which?'scored':'')+'" style="--team:'+teams[id].color+'">'+crest(id)+'<div><strong>'+teams[id].code+'</strong><small>'+teams[id].mascot+'</small></div><b>'+n+'</b></div>';
  return '<div class="broadcast-score"><div class="broadcast-teams" aria-label="Score '+match.us+'–'+match.them+'">'+side(match.team,match.us,'us')+side(match.opp,match.them,'them')+'</div><span class="broadcast-period">'+period+
   (match.moment?.challenge&&!match.practice?' <span id="challenge-clock">'+formatClock(match.moment.clock)+'</span>':'')+'</span></div>';
@@ -1534,6 +1562,180 @@ function showMomentResult(moment,success,label,goal,next){
   frame=requestAnimationFrame(animate);
  }
  queuePeriod(820);
+}
+const simPeriodNames=['Pre-game','First period','Second period','Third period','Overtime','Second overtime','Shootout'];
+
+function simBeat(kind,clock,label,text,side=null,credit=''){
+ return {kind,clock,label,text,side,credit};
+}
+function planRegulation(period){
+ const {saves,goals}=rollPeriod(false);
+ const home=teams[match.team],away=teams[match.opp],p=period-1;
+ const fillers=[
+  simBeat('chance',[940,972,1120][p],['Early rush','Off the draw','Pressure shift'][p],
+   [home.star+' carries the puck wide. The defence steers the rush into the corner.',
+    home.star+' wins the draw. '+home.city+' cycles the puck below the goal line.',
+    home.city+' keeps the puck in at the blue line and changes on the fly.'][p],'us'),
+  simBeat('save',[610,662,732][p],['Save','Traffic in front','Big stop'][p],
+   (isGoalie()?playerName():home.city+'’s goalie')+' tracks a shot from '+away.star+' and makes the stop.','them'),
+  simBeat('chance',[155,193,95][p],['Blocked shot','Loose puck','Late push'][p],
+   [away.city+' gets a stick in the lane to block a shot from '+home.star+'.',
+    'The puck comes loose in the slot. '+home.city+' sweeps it out of danger.',
+    away.star+' looks for a deflection. The point shot sails wide.'][p],'them')
+ ];
+ const moments=goals.map((g,i)=>simBeat('goal',[[1030,748,475,218],[1104,839,414,157],[1013,695,374,63]][p][i],'Goal','',g.side,g.credit));
+ return {saves,beats:[simBeat('opening',1200,'Puck drop',simPeriodNames[period]+' underway.'),...fillers.concat(moments).sort((a,b)=>b.clock-a.clock),simBeat('horn',0,period===3?'End of regulation':'End of '+simPeriodNames[period].toLowerCase(),'')]};
+}
+function prepareSimPeriod(period){
+ const sim=match.sim;
+ match.period=Math.min(4,period);
+ match.tag=period<=3?'P'+period:period===5?'2OT':'OT';
+ sim.stage=period;
+ sim.openScore=[match.us,match.them];
+ if(period<=3){
+  const plan=planRegulation(period);
+  match.line.sv+=plan.saves;
+  sim.queue=plan.beats;
+  return;
+ }
+ match.extra=true;match.minutes=period===5?70:65;
+ if(period===4){
+  const decisive=Math.random()<.48||career.phase==='playoffs';
+  sim.secondOvertime=decisive&&career.phase==='playoffs'&&Math.random()<.16;
+  sim.overtimeWinner=decisive?(Math.random()<clamp(.51+(overall()-75)*.008,.36,.72)?'us':'them'):null;
+ }
+ const winner=sim.overtimeWinner;
+ const willScore=winner&&(period===5||!sim.secondOvertime);
+ const opponent=teams[match.opp];
+ sim.queue=[
+  simBeat('opening',300,'Sudden death',period===4?'Three-on-three overtime begins. The next goal wins.':'The teams are back on the ice for a second overtime.'),
+  simBeat('save',188,'Overtime chance',opponent.star+' gets into the slot, but the goalie closes the opening.','them'),
+  ...(willScore?[simBeat('goal',72,'Overtime winner','',winner,winner==='us'&&!isGoalie()&&Math.random()<.55?'goal':'')]:[
+   simBeat('chance',42,'Last rush','A late rush ends with the puck sliding harmlessly behind the net.','us'),
+   simBeat('horn',0,sim.secondOvertime?'End of first overtime':'Overtime ends tied','')])
+ ];
+}
+function prepareSimShootout(){
+ const sim=match.sim;
+ sim.stage=6;match.tag='SO';sim.shootoutScore=[0,0];
+ const homeWins=Math.random()<.52;
+ sim.queue=[simBeat('opening',null,'Shootout','Three rounds. The team with more goals takes the extra point.')];
+ const winning=[[1,0],[0,1],[1,0]],losing=winning.map(([a,b])=>[b,a]);
+ (homeWins?winning:losing).forEach(([home,away],round)=>{
+  sim.queue.push({...simBeat('round',null,'Shootout round '+(round+1),
+   teams[match.team].code+': '+(home?'scores':'denied')+' · '+teams[match.opp].code+': '+(away?'scores':'denied')+'.'),home,away});
+ });
+ sim.queue.push({...simBeat('decision',null,'Shootout winner',''),homeWins});
+}
+function completeSimPeriod(){
+ const sim=match.sim;
+ if(sim.stage===6)return;
+ sim.periods.push({label:sim.stage<=3?String(sim.stage):sim.stage===4?'OT':'2OT',home:match.us-sim.openScore[0],away:match.them-sim.openScore[1]});
+}
+function nextQuickSimBeat(){
+ const sim=match.sim;
+ if(!sim||match.settled||sim.paused&&!sim.draining)return;
+ if(!sim.queue.length){
+  if(sim.finished){concludeGame();return;}
+  if(sim.stage<3)prepareSimPeriod(sim.stage+1);
+  else if(sim.stage===3&&match.us===match.them)prepareSimPeriod(4);
+  else if(sim.stage===4&&sim.secondOvertime)prepareSimPeriod(5);
+  else if(sim.stage===4&&!sim.overtimeWinner)prepareSimShootout();
+  else {concludeGame();return;}
+ }
+ const beat=sim.queue.shift();
+ sim.current=beat;sim.playStarted=performance.now();
+ sim.feedClock=beat.clock===null?null:formatClock(beat.clock);
+ if(beat.kind==='goal'){
+  addGoal(beat.side,beat.credit);
+  beat.text=match.feed.at(-1)[1];
+  if(sim.stage>=4){sim.finished=true;completeSimPeriod();}
+ }else if(beat.kind==='horn'){
+  completeSimPeriod();
+  const us=teams[match.team].code,them=teams[match.opp].code;
+  beat.text=us+' '+match.us+'–'+match.them+' '+them+'.';
+  if(sim.stage<3)beat.text+=' Teams head to intermission.';
+  addFeed(match.tag,beat.label+' · '+beat.text);
+ }else if(beat.kind==='decision'){
+  sim.shootoutWinner=beat.homeWins?'us':'them';
+  if(beat.homeWins)match.us++;else match.them++;
+  beat.text=teams[beat.homeWins?match.team:match.opp].city+' takes the shootout · '+match.us+'–'+match.them+'.';
+  addFeed('SO',beat.text);sim.finished=true;
+ }else{
+  if(beat.kind==='round'){
+   sim.shootoutScore[0]+=beat.home;sim.shootoutScore[1]+=beat.away;
+   beat.text+=' Shootout: '+sim.shootoutScore.join('–')+'.';
+  }
+  addFeed(match.tag,beat.text);
+ }
+ sim.feedClock=null;
+ if(sim.draining)return;
+ const focus=document.activeElement?.dataset.action;
+ render();
+ if(focus==='sim-pause'||focus==='fast-game')app.querySelector('[data-action="'+focus+'"]')?.focus({preventScroll:true});
+ animateQuickSimRink();
+ const delay=beat.kind==='horn'?3150:beat.kind==='goal'||beat.kind==='decision'?3050:beat.kind==='opening'?1500:2050;
+ queuePeriod(delay);
+}
+function finishQuickSim(){
+ clearTimeout(timer);
+ match.sim.draining=true;
+ match.sim.paused=false;
+ while(!match.settled)nextQuickSimBeat();
+}
+function toggleQuickSim(){
+ const sim=match.sim;
+ if(!sim||match.settled)return;
+ sim.paused=!sim.paused;
+ clearTimeout(timer);cancelAnimationFrame(frame);
+ render();
+ app.querySelector('[data-action="sim-pause"]')?.focus({preventScroll:true});
+ if(!sim.paused)queuePeriod(sim.current?.kind==='horn'?2500:1500);
+}
+function quickSimPeriodTable(periods,home,away,decider=null){
+ if(!periods?.length)return '';
+ const cols=periods.map(p=>p.label).concat(decider?['SO']:[]);
+ const row=(side,id)=>'<tr><th scope="row">'+teams[id].code+'</th>'+periods.map(p=>'<td>'+p[side]+'</td>').join('')+
+  (decider?'<td>'+(decider===(side==='home'?'us':'them')?'W':'—')+'</td>':'')+'</tr>';
+ return '<table class="sim-linescore" aria-label="Goals by period"><thead><tr><th scope="col">Club</th>'+
+  cols.map(label=>'<th scope="col">'+label+'</th>').join('')+'</tr></thead><tbody>'+row('home',home)+row('away',away)+'</tbody></table>';
+}
+function quickSimView(){
+ const sim=match.sim,beat=sim.current,clock=beat?.clock;
+ const feature='<div class="sim-feature" role="status"><div class="row spread"><p class="eyebrow">'+simPeriodNames[sim.stage]+'</p>'+
+  (Number.isInteger(clock)?'<span class="sim-clock">'+formatClock(clock)+'</span>':'')+'</div><h3>'+(beat?.label??'Teams take the ice')+'</h3><p>'+(beat?.text??teamName(match.team)+' vs. '+teamName(match.opp))+'</p></div>';
+ return '<section class="broadcast-shell quick-sim stack">'+liveScore()+'<div class="broadcast-layout"><div class="rink-stage">'+rinkCanvas()+
+  '<div class="rink-chip">'+(sim.paused?'Paused':beat?.kind==='horn'&&sim.stage<3?'Intermission':'Quick Sim')+'</div></div>'+
+  '<aside class="panel broadcast-feed"><h3>Play-by-play</h3>'+feedView(match.feed)+'</aside><div class="panel broadcast-controls">'+feature+
+  quickSimPeriodTable(sim.periods,match.team,match.opp,sim.shootoutWinner)+'<div class="row sim-buttons">'+btn('sim-pause',sim.paused?'Resume broadcast':'Pause broadcast','quiet')+
+  btn('fast-game','Finish Quick Sim','gold')+'</div></div></div></section>';
+}
+function animateQuickSimRink(){
+ cancelAnimationFrame(frame);
+ if(reduceMotion()||!app.querySelector('[data-broadcast-rink]'))return;
+ const sim=match.sim,beat=sim.current;
+ if(!beat?.side)return;
+ const tick=()=>{
+  if(screen!=='live'||match.sim!==sim||sim.paused||sim.current!==beat)return;
+  paintBroadcast();
+  if(performance.now()-sim.playStarted<850)frame=requestAnimationFrame(tick);
+ };
+ frame=requestAnimationFrame(tick);
+}
+function paintQuickSimRink(c,now,own,opp){
+ const sim=match.sim,beat=sim.current;
+ const attacking=beat?.side==='them'?opp:own;
+ const defending=beat?.side==='them'?own:opp;
+ const livePlay=Boolean(beat?.side);
+ const progress=reduceMotion()?1:clamp((now-sim.playStarted)/800,0,1);
+ const start=[livePlay&&beat.side==='them'?610:374,370];
+ const goal=beat?.kind==='goal';
+ const end=[livePlay?(beat.side==='them'?445:516):480,goal?194:beat?.kind==='save'?228:262];
+ rinkSkater(c,480,225,.92,defending,true);
+ rinkSkater(c,lerp(start[0]-35,beat?.side==='them'?562:404,progress),lerp(350,313,progress),1.35,attacking,false,beat?.side==='them' ? .13 : -.16);
+ rinkSkater(c,beat?.side==='them'?389:584,292,1.1,defending,false,.1);
+ if(livePlay)rinkPuck(c,lerp(start[0],end[0],progress),lerp(start[1],end[1],progress),start,goal?'#f9c966':'#397b9a');
+ else rinkPuck(c,480,334);
 }
 const challengeTypes={
  crease:{title:'Breakaway Challenge',help:'Move with ← and →. Press Space to make the save when the puck comes off the stick.'},
@@ -1849,6 +2051,7 @@ function recapView(){
  return '<section class="postgame stack"><div class="panel postgame-head '+(r.won?'won':'')+'" style="--home:'+home.color+';--away:'+away.color+'"><div class="row spread"><p class="eyebrow">Final score · '+stage+'</p>'+advance+'</div><h2>'+recapHeadline(r)+'</h2>'+board(r.team,r.opp,r.score)+'</div>'+
  ((r.milestone||r.rank)?'<div class="milestone-card panel"><p class="eyebrow">'+(r.milestone?'Career milestone':'Card upgrade')+'</p><h3>'+(r.milestone||r.rank)+'</h3>'+(r.milestone&&r.rank?'<p>Card upgraded to '+r.rank+'</p>':'')+'</div>':'')+
  '<div class="postgame-grid"><section class="panel postgame-stars"><h3>Three stars</h3><div class="feature-star">'+crest(starTeam,true)+'<div><p class="eyebrow">First star</p><strong>'+first+'</strong></div></div><ol start="2"><li>'+r.stars[1]+'</li><li>'+r.stars[2]+'</li></ol></section><section class="panel postgame-stats"><h3>Your game</h3>'+statsView(r.line)+metrics([['XP earned','+'+r.xp],['Puck Bucks','+'+r.pay],['Energy',career.energy+'%'],['Overall',ovr]])+'</section></div>'+
+ (r.periods?.length?'<section class="panel sim-recap"><h3>Goals by period</h3>'+quickSimPeriodTable(r.periods,r.team,r.opp,r.shootoutWinner)+'</section>':'')+
  (!isGoalie()&&r.celebration?celebrationView(r.celebration):'')+'<details class="panel"><summary>Full play-by-play</summary>'+feedView(r.feed)+'</details></section>';
 }
 function draftPresentation(){
@@ -2220,12 +2423,13 @@ const actions={
  'start-match'({id}){startMatch(id);},
  'practice-challenge'({id}){startChallengePractice(id);},
  challenge({id}){challengeInput(id);},
+ 'sim-pause'(){toggleQuickSim();},
  'fast-game'(){
   clearTimeout(timer);
+  if(match.sim){finishQuickSim();return;}
   if(match.nextBeat){advanceBroadcast();return;}
   if(match.shootout){startShootout();return;}
-  if(match.mode==='sim'){while(screen==='live'&&!match.settled){advanceGame();clearTimeout(timer);}}
-  else advanceGame();
+  advanceGame();
  },
  moment({index}){playMoment(Number(index));}
 };
