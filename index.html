@@ -106,6 +106,10 @@ label.field{display:grid;gap:.35rem;font-weight:780}input,select{width:100%;bord
 @media(max-width:425px){.broadcast-team small{display:none}.broadcast-team .crest{width:26px;height:26px}.broadcast-team{gap:.26rem;padding-inline:.25rem}.broadcast-team b{font-size:1.3rem;min-width:1.18rem}.broadcast-period{font-size:.68rem}.broadcast-lanes button{padding-inline:.25rem}.ring-display{gap:.35rem}.ring-art{scale:.8}}
 .fitting-room .fitting-colours{width:100%;max-width:710px}.fitting-colours .jersey-form{margin-top:.5rem}.fitting-colours input[type=color]{height:44px}.fitting-room:not(:has(.gear-art,.celebration-scene)){grid-template-columns:minmax(105px,205px) minmax(0,1fr)}
 @media(max-width:540px){.fitting-room:not(:has(.gear-art,.celebration-scene)){grid-template-columns:110px minmax(0,1fr)}.fitting-colours .jersey-form{grid-template-columns:repeat(2,minmax(0,1fr));font-size:.87rem}.fitting-colours form button{grid-column:1/-1}.fitting-colours button.quiet{font-size:.78rem;padding:.3rem .45rem}}
+
+.challenge-controls h3{font-size:clamp(1.04rem,2.5vw,1.33rem)}.challenge-controls #challenge-signal{font-weight:850;min-height:1.4em;color:var(--ice)}
+.challenge-controls[data-ready=true] #challenge-signal{color:var(--gold)}.challenge-controls .row button{flex:0 1 auto}.challenge-controls .eyebrow{white-space:normal}.broadcast-period #challenge-clock{letter-spacing:.05em;margin-left:.27rem;font-variant-numeric:tabular-nums}
+@media(max-width:490px){.challenge-controls .row button{padding-inline:.5rem}.broadcast-period #challenge-clock{display:block;margin-left:0}}
 </style>
 </head>
 <body>
@@ -615,7 +619,7 @@ function eventView(){
  return '<section class="panel"><p class="eyebrow">Be a Pro</p><h2>'+title+'</h2><p>'+body+'</p><div class="row">'+btn('event',a,'gold','data-index="0"',(ae.bucks??0)<-career.bucks)+btn('event',b,'','data-index="1"',(be.bucks??0)<-career.bucks)+'</div></section>';
 }
 function trainingView(){
- return '<section>'+heading('Practice rink','Training','Drills cost 12 energy and award XP. Pass a drill to add an attribute point.')+'<p>Energy <strong class="gold-text">'+career.energy+'%</strong></p><div class="grid">'+drills.filter(d=>isGoalie()?d[0]!=='shot':['shot','skate'].includes(d[0])).map(([id,label,attr,desc])=>'<article class="panel"><h3>'+label+'</h3><p class="muted">'+desc+'</p><p>+'+statName[attr]+(career.drillBests[id]?' · Best '+career.drillBests[id]:'')+'</p>'+btn('drill','Start drill','gold','data-id="'+id+'"',career.energy<12)+'</article>').join('')+'<article class="panel"><h3>Coach’s Quiz</h3><p class="muted">Answer a hockey question for XP and team chemistry. Available once per game day.</p>'+btn('quiz','Take the quiz','','',career.quizGame===career.games)+'</article></div><div class="row" style="margin-top:1rem">'+btn('rest','Rest +30 energy','quiet','',career.energy===100)+'</div></section>';
+ return '<section>'+heading('Practice rink','Training','Drills cost 12 energy and award XP. Pass a drill to add an attribute point.')+'<section class="panel"><h3>Practice game highlights</h3><p class="muted">Try the controls with extra time and no effect on your career.</p><div class="row">'+rolePlays[career.role].map(id=>btn('practice-challenge',challengeTypes[id].title,'quiet','data-id="'+id+'"')).join('')+'</div></section><p>Energy <strong class="gold-text">'+career.energy+'%</strong></p><div class="grid">'+drills.filter(d=>isGoalie()?d[0]!=='shot':['shot','skate'].includes(d[0])).map(([id,label,attr,desc])=>'<article class="panel"><h3>'+label+'</h3><p class="muted">'+desc+'</p><p>+'+statName[attr]+(career.drillBests[id]?' · Best '+career.drillBests[id]:'')+'</p>'+btn('drill','Start drill','gold','data-id="'+id+'"',career.energy<12)+'</article>').join('')+'<article class="panel"><h3>Coach’s Quiz</h3><p class="muted">Answer a hockey question for XP and team chemistry. Available once per game day.</p>'+btn('quiz','Take the quiz','','',career.quizGame===career.games)+'</article></div><div class="row" style="margin-top:1rem">'+btn('rest','Rest +30 energy','quiet','',career.energy===100)+'</div></section>';
 }
 function shopView(){
  const categories=isGoalie()?['pads','glove','mask','skates']:['stick','skates','visor','helmet','celebration'];
@@ -653,7 +657,7 @@ function render(){
  if(screen==='slots')body=slotsView();
  else if(screen==='create')body=createView();
  else {
-  const pages={hub:hubView,training:trainingView,shop:shopView,locker:lockerView,league:leagueView,draft:draftView,awards:awardResultsView,contract:contractView,quiz:quizView,pre:preView,live:liveView,recap:recapView,drill:drillView,drillend:drillEndView};
+  const pages={hub:hubView,training:trainingView,shop:shopView,locker:lockerView,league:leagueView,draft:draftView,awards:awardResultsView,contract:contractView,quiz:quizView,pre:preView,live:liveView,'practice-result':practiceResultView,recap:recapView,drill:drillView,drillend:drillEndView};
   body=(pages[screen]??hubView)();
   if(!locked&&screen!=='recap'){
    body='<nav class="nav" aria-label="Career">'+[['hub','Career Hub'],['training','Training'],['shop','Gear Shop'],['locker','Locker Room'],['league','Standings']].map(([id,label])=>btn('view',label,'','data-id="'+id+'"'+(screen===id?' aria-current="page"':''))).join('')+'</nav>'+body;
@@ -670,7 +674,7 @@ function render(){
 }
 function preView(){
  const opp=nextOpponent(),special=career.gp%4===3&&career.phase!=='playoffs';
- return '<section class="panel arena stack">'+heading(stage(),'Next up',phaseText()+(special?' · Rivalry night':''))+'<div class="match-faceoff" style="--home:'+teams[career.team].color+';--away:'+teams[opp].color+'">'+board(career.team,opp,'VS')+'</div>'+'<p class="muted">Choose how to play. Both modes count toward your career.</p><div class="grid">'+btn('start-match','Play Action Moments','gold','data-id="action"')+btn('start-match','Quick Sim','quiet','data-id="sim"')+'</div></section>';
+ return '<section class="panel arena stack">'+heading(stage(),'Next up',phaseText()+(special?' · Rivalry night':''))+'<div class="match-faceoff" style="--home:'+teams[career.team].color+';--away:'+teams[opp].color+'">'+board(career.team,opp,'VS')+'</div>'+'<p class="muted">Opponent style · '+opponentStyles[opp%opponentStyles.length]+'</p><div class="grid">'+btn('start-match','Play Action Moments','gold','data-id="action"')+btn('start-match','Quick Sim','quiet','data-id="sim"')+'</div></section>';
 }
 function board(home,away,score){
  return '<div class="scoreboard"><div>'+crest(home,true)+'<p><strong>'+teams[home].code+'</strong><br><small class="muted">'+teams[home].mascot+'</small></p></div><div class="score" aria-label="'+(score==='VS'?'Versus':score)+'">'+score+'</div><div>'+crest(away,true)+'<p><strong>'+teams[away].code+'</strong><br><small class="muted">'+teams[away].mascot+'</small></p></div></div>';
@@ -678,7 +682,7 @@ function board(home,away,score){
 function addFeed(tag,text){match.feed.push([tag,text]);}
 function startMatch(mode){
  const spotlight=career.phase==='playoffs'||career.gp%4===3;
- match={mode,team:career.team,opp:nextOpponent(),period:0,us:0,them:0,statGoals:0,statAgainst:0,feed:[],line:stats(),moment:null,extra:false,shootout:null,minutes:60,spotlight,settled:false,highlights:0};
+ match={mode,team:career.team,opp:nextOpponent(),period:0,us:0,them:0,statGoals:0,statAgainst:0,feed:[],line:stats(),moment:null,extra:false,shootout:null,minutes:60,spotlight,highlightPeriod:career.games%3===1?2:3,playHistory:[],settled:false,highlights:0};
  addFeed('LIVE',teamName(match.team)+' and '+teamName(match.opp)+' are on the ice.');
  show('live');queuePeriod(600);
 }
@@ -716,7 +720,7 @@ function scoringOdds(){
 }
 function ordinaryPeriod(highlight){
  const [ours,theirs]=scoringOdds();
- const danger=highlight==='block'||isGoalie()&&highlight;
+ const danger=isGoalie()&&highlight;
  if(danger)addFeed(match.tag,teams[match.opp].code+' is setting up a dangerous chance.');
 
  if(isGoalie())match.line.sv+=int(7,11);
@@ -729,12 +733,6 @@ function ordinaryPeriod(highlight){
   if((!danger||i===0)&&Math.random()<theirs){addGoal('them');scored=true;}
  }
  if(!scored&&!highlight)addFeed(match.tag,isGoalie()?playerName()+' shuts the door through a scoreless period.':'Both clubs trade chances in a scoreless period.');
-}
-function highlightType(){
- if(isGoalie())return ['point','deke','scramble'][(career.games+match.period)%3];
- if(career.role==='sniper')return match.period%2?'breakaway':'one';
- if(career.role==='playmaker')return match.period%2?'pass':'saucer';
- return ['battle','block','duel'][(career.games+match.period)%3];
 }
 const highlightInfo={
  breakaway:['Breakaway','Shoot at the open corner.','target'],
@@ -753,10 +751,9 @@ const highlightInfo={
 function advanceGame(){
  if(match.period<3){
   match.period++;match.tag='P'+match.period;
-  const play=match.mode==='action'&&(match.spotlight||match.period===2);
-  const highlight=play?highlightType():null;
-  ordinaryPeriod(highlight);
-  if(highlight){launchMoment(highlight);return;}
+  const play=match.mode==='action'&&(match.spotlight||match.period===match.highlightPeriod);
+  ordinaryPeriod(play);
+  if(play){startCareerChallenge(chooseCareerSituation());return;}
   render();queuePeriod();return;
  }
  if(match.period===3&&match.us===match.them){
@@ -811,6 +808,7 @@ function concludeGame(){
  }
  if(t!=='junior'&&won)unlock('firstwin');
  advanceSchedule(won,match.extra,match.us,match.them);
+ if(match.playHistory?.length)career.recentPlays=[...(career.recentPlays??[]),...match.playHistory].slice(-4);
  if(career.cups)unlock('cup');
  if(rankIndex()>=3)unlock('allstar');
  if(rankIndex()===4)unlock('legend');
@@ -830,9 +828,9 @@ function liveView(){
  const highlight=match.moment,outcome=match.presentation;
  return '<section class="broadcast-shell stack">'+liveScore()+'<div class="broadcast-layout"><div class="rink-stage">'+rinkCanvas()+
  (outcome?'<div class="rink-result '+(outcome.success?'success':'miss')+'" role="status">'+outcome.label+'</div>':
- highlight?'<div class="rink-chip">'+highlight.title+'</div>':'<div class="rink-chip">'+(match.period===0?'Opening faceoff':'Live broadcast')+'</div>')+
+ highlight?'<div class="rink-chip">'+(highlight.challenge?highlight.context:highlight.title)+'</div>':'<div class="rink-chip">'+(match.period===0?'Opening faceoff':'Live broadcast')+'</div>')+
  '</div><aside class="panel broadcast-feed"><h3>Play-by-play</h3>'+feedView(match.feed)+'</aside>'+
- '<div class="panel broadcast-controls">'+(highlight?momentView(highlight):btn('fast-game',match.mode==='sim'?'Finish Quick Sim':'Continue broadcast','quiet'))+'</div></div></section>';
+ '<div class="panel broadcast-controls">'+(highlight?(highlight.challenge?challengeControls(highlight):momentView(highlight)):btn('fast-game',match.mode==='sim'?'Finish Quick Sim':'Continue broadcast','quiet'))+'</div></div></section>';
 }
 function feedView(feed){
  return '<ol class="feed" aria-label="Play-by-play" aria-live="polite">'+feed.map(([tag,line])=>'<li><b>'+tag+'</b> '+line+'</li>').join('')+'</ol>';
@@ -1004,6 +1002,7 @@ function paintBroadcast(now=performance.now()){
  const outcome=match.presentation,own=playerPalette(),opp=teams[match.opp],still=reduceMotion();
  const outcomeTime=outcome?clamp((now-outcome.at)/420,0,1):0;
  iceScene(c,outcome?.goal===true||!m&&match.lastGoal?.period===match.period);
+ if(m?.challenge){paintCareerChallenge(c,m,now,outcome,own,opp);return;}
  if(!m){
   rinkSkater(c,475,235,.95,opp,true);
   rinkSkater(c,415,362,1.38,own,false,-.18);
@@ -1049,10 +1048,11 @@ function paintBroadcast(now=performance.now()){
  }else rinkPuck(c,from[0]+(fake?(m.fake-1)*21:0),from[1]);
 }
 function liveScore(){
- const period=match.period===0?'Warmup':match.tag==='SO'?(match.shootout?'SO '+match.shootout.us+'–'+match.shootout.them:'Shootout'):match.period===4?'Overtime':'Period '+match.period;
+ const period=match.practice?'Practice':match.period===0?'Warmup':match.tag==='SO'?(match.shootout?'SO '+match.shootout.us+'–'+match.shootout.them:'Shootout'):match.period===4?'Overtime':'Period '+match.period;
  const recent=match.lastGoal?.period===match.period?match.lastGoal.side:'';
  const side=(id,n,which)=>'<div class="broadcast-team '+(recent===which?'scored':'')+'" style="--team:'+teams[id].color+'">'+crest(id)+'<div><strong>'+teams[id].code+'</strong><small>'+teams[id].mascot+'</small></div><b>'+n+'</b></div>';
- return '<div class="broadcast-score"><div class="broadcast-teams" aria-label="Score '+match.us+'–'+match.them+'">'+side(match.team,match.us,'us')+side(match.opp,match.them,'them')+'</div><span class="broadcast-period">'+period+'</span></div>';
+ return '<div class="broadcast-score"><div class="broadcast-teams" aria-label="Score '+match.us+'–'+match.them+'">'+side(match.team,match.us,'us')+side(match.opp,match.them,'them')+'</div><span class="broadcast-period">'+period+
+  (match.moment?.challenge&&!match.practice?' <span id="challenge-clock">'+formatClock(match.moment.clock)+'</span>':'')+'</span></div>';
 }
 function advanceBroadcast(){
  if(match.nextBeat){
@@ -1074,6 +1074,295 @@ function showMomentResult(moment,success,label,goal,next){
   frame=requestAnimationFrame(animate);
  }
  queuePeriod(820);
+}
+const challengeTypes={
+ crease:{title:'Breakaway Challenge',help:'Move with ← and →. Press Space to make the save when the puck comes off the stick.'},
+ rebounds:{title:'Rebound Scramble',help:'Move with ← and →. Press Space to save, then slide across for the rebound.'},
+ shot:{title:'Pick Your Shot',help:'Aim with ← and →. Press Space to shoot before the goalie gets across.'},
+ rush:{title:'Two-on-One',help:'Press 1 to shoot or 2 to pass. If you pass, press Space as the puck reaches your teammate.'},
+ boards:{title:'Win It on the Boards',help:'Press Space to shield the puck as the defender arrives. Then choose Drive or Dish.'}
+};
+const rolePlays={goalie:['crease','rebounds'],sniper:['shot'],playmaker:['rush'],power:['boards']};
+const opponentStyles=['Quick release','Patient puck control','Net-front traffic'];
+const laneNames=['Left','Middle','Right'];
+const formatClock=seconds=>Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');
+
+function chooseCareerSituation(){
+ const gap=match.us-match.them,late=match.period===3;
+ const pool=late?[
+  ...(gap===1?[['protect','Protect the lead',44]]:[]),
+  ...(gap===-1?[['chase',isGoalie()?'Keep it a one-goal game':'Extra attacker · One goal to tie',38]]:[]),
+  ...(gap===0?[['level','Next goal takes the lead',52]]:[]),
+  ['last','Final-minute rush',56]
+ ]:[];
+ pool.push(['special',isGoalie()?'Penalty kill':'Power play',584],['rush-hour','Odd-man rush',213],['pressure','Pressure shift',127]);
+ const recent=[...(career.recentPlays??[]),...match.playHistory].slice(-4);
+ const candidates=rolePlays[career.role].flatMap(type=>pool.map(context=>({type,context,key:type+'-'+context[0]})));
+ const lastType=recent.at(-1)?.split('-')[0];
+ const scored=candidates.map(c=>{
+  const age=recent.lastIndexOf(c.key);
+  return {c,value:(age===-1?5:-(age+1))+
+   (c.type!==lastType?4:0)+(late&&c.context[2]<60?3:0)+
+   (c.type==='rebounds'&&(c.context[0]==='special'||match.opp%3===2)?1:0)+Math.random()};
+ });
+ return scored.sort((a,b)=>b.value-a.value)[0].c;
+}
+
+function startCareerChallenge(situation){
+ const {type,context}=situation;
+ const style=match.opp%opponentStyles.length;
+ const now=performance.now();
+ const first=int(0,2),second=(first+int(1,2))%3;
+ const opening=int(0,1)===0?0:2;
+ const speed=style===0?-.25:style===1?.35:0;
+ const practiceBonus=match.practice ? .95 : 0;
+ const timingSkill=skill(type==='crease'||type==='rebounds'?'reflex':type==='shot'?'shoot':'sense');
+ const bonus=clamp(timingSkill*.025,0,.75);
+ match.moment={
+  id:type,challenge:true,title:challengeTypes[type].title,scenario:context[0],context:context[1],clock:context[2],style,
+  started:now,stepAt:now,phase:'opening',lane:1,fromLane:1,movedAt:now,
+  target:first,fake:second,opening,defender:context[0]==='chase'&&type==='rush'?1:int(0,1),saves:0,shotNumber:1,
+  cueAt:type==='crease'?3.1+speed:type==='rebounds'?2.5+speed:type==='boards'?2.6+speed:1.85+speed,
+  window:(type==='rebounds'?1.9:2.5)+practiceBonus+bonus,choice:null
+ };
+ if(!match.practice){
+  match.playHistory.push(situation.key);
+  const clincher=career.phase==='playoffs'&&career.series.pairs[career.series.index].wins[
+   career.series.pairs[career.series.index].ids.indexOf(match.team)]===1;
+  if(context[0]==='special'){
+   addFeed(match.tag,teams[isGoalie()?match.team:match.opp].code+' takes a minor penalty.');
+  }else if(context[0]==='chase'&&!isGoalie()){
+   addFeed(match.tag,teams[match.team].code+' pulls the goalie for an extra attacker.');
+  }
+  addFeed(match.tag,context[1]+' · '+formatClock(context[2])+' remaining. '+challengeTypes[type].title+'!'+(clincher?' Win tonight to take the series.':''));
+ }
+ render();
+ app.querySelector('[data-action="challenge"]')?.focus({preventScroll:true});
+ tickCareerChallenge();
+}
+
+function startChallengePractice(type){
+ if(!rolePlays[career.role].includes(type))return;
+ clearTimeout(timer);
+ match={mode:'practice',practice:true,team:career.team,opp:nextOpponent()??((career.team+1)%teams.length),period:1,tag:'PRACTICE',
+  us:0,them:0,statGoals:0,statAgainst:0,feed:[],line:stats(),highlights:0,playHistory:[]};
+ show('live');
+ startCareerChallenge({type,context:['practice','Practice',60]});
+}
+
+function challengeState(m,now=performance.now()){
+ const t=Math.max(0,(now-m.stepAt)/1000);
+ if(m.phase==='one-timer'){
+  if(t>=1.55+m.window)return {expired:true};
+  return {t,ready:t>=1.55,text:t>=1.55?'One-time it now!':'Pass coming across…'};
+ }
+ if(m.phase==='puck-won'){
+  if(t>=4+m.window)return {expired:true};
+  return {t,ready:true,text:m.defender===0?'Defender covers your teammate.':'Defender comes at you.'};
+ }
+ if(m.id==='crease'||m.id==='rebounds'){
+  if(t>=m.cueAt+m.window)return {expired:true};
+  const fake=m.id==='crease'&&m.style!==0&&t>=m.cueAt-1.55&&t<m.cueAt-.5;
+  const ready=t>=m.cueAt;
+  return {t,fake,ready,text:ready?'Shot '+laneNames[m.target].toLowerCase()+'! Make the save.':fake?'Fake '+laneNames[m.fake].toLowerCase()+'! Watch the puck.':m.shotNumber>1?'Rebound! Find the puck.':'Shooter approaching…'};
+ }
+ if(m.id==='shot'){
+  if(t>=8.5+(match.practice?2:0))return {expired:true};
+  // The goalie moves across the crease and resets toward the middle.
+  const beat=Math.floor(Math.max(0,t-m.cueAt)/(m.style===1?1.85:1.55))%3;
+  const cover=t<m.cueAt?1:beat===0?m.opening:beat===1?2-m.opening:1;
+  return {t,ready:true,cover,text:'Goalie covers '+laneNames[cover].toLowerCase()+' · Aim '+laneNames[m.lane].toLowerCase()};
+ }
+ if(m.id==='rush'){
+  if(t>=m.cueAt+4.2+m.window)return {expired:true};
+  return {t,ready:t>=m.cueAt,text:t<m.cueAt?'Watch the defender…':m.defender===0?'Defender stays in the passing lane.':'Defender steps up to challenge you.'};
+ }
+ if(t>=m.cueAt+m.window)return {expired:true};
+ return {t,ready:t>=m.cueAt,text:t>=m.cueAt?'Defender is here. Shield now!':'Set your feet and wait for contact…'};
+}
+
+function tickCareerChallenge(){
+ const m=match?.moment;
+ if(screen!=='live'||!m?.challenge)return;
+ const now=performance.now(),cue=challengeState(m,now);
+ if(cue.expired){
+  if(m.id==='crease'||m.id==='rebounds')finishGoalieShot(m,false,'The shot got through before you made a save.');
+  else finishCareerChallenge(m,false,m.phase==='one-timer'?'The pass got away. Shoot as it reaches your teammate.':m.id==='shot'?'The goalie ran out the clock. Pick a side and shoot sooner.':'The defender recovered. Make your move sooner.');
+  return;
+ }
+ const signal=app.querySelector('#challenge-signal');
+ if(signal&&signal.textContent!==cue.text)signal.textContent=cue.text;
+ const position=app.querySelector('#challenge-position');
+ if(position)position.textContent=laneNames[m.lane];
+ const clock=app.querySelector('#challenge-clock');
+ if(clock)clock.textContent=formatClock(Math.max(0,m.clock-Math.floor((now-m.started)/1000)));
+ const action=app.querySelector('.challenge-controls');
+ if(action)action.dataset.ready=String(cue.ready);
+ paintBroadcast(now);
+ frame=requestAnimationFrame(tickCareerChallenge);
+}
+
+function challengeControls(m){
+ const control=(value,text,css='quiet')=>btn('challenge',text,css,'data-id="'+value+'"');
+ let buttons='';
+ if(m.id==='crease'||m.id==='rebounds'||m.id==='shot'){
+  buttons=control('left','← Left')+control('space',m.id==='shot'?'Shoot (Space)':'Make save (Space)','gold')+control('right','Right →');
+ }else if(m.id==='rush'){
+  buttons=m.phase==='one-timer'?control('space','One-timer (Space)','gold'):control('one','Shoot (1)','gold')+control('two','Pass (2)');
+ }else{
+  buttons=m.phase==='puck-won'?control('one','Drive (1)','gold')+control('two','Dish (2)'):control('space','Shield (Space)','gold');
+ }
+ return '<div class="challenge-controls stack" data-ready="false"><div class="row spread"><h3>'+m.title+'</h3><span class="eyebrow">'+m.context+'</span></div>'+
+ '<p class="muted">'+challengeTypes[m.id].help+'</p><p id="challenge-signal" role="status"></p><div class="row">'+buttons+'</div>'+
+ (m.id==='rebounds'?'<p class="muted">Shot '+m.shotNumber+' of 3 · '+m.saves+' saved</p>':'')+
+ ((m.id==='crease'||m.id==='shot'||m.id==='rebounds')?'<small class="muted">Your position · <strong id="challenge-position">'+laneNames[m.lane]+'</strong></small>':'')+
+ (match.practice?control('exit','End practice'):'')+'</div>';
+}
+
+function challengeInput(input){
+ const m=match?.moment;
+ if(screen!=='live'||!m?.challenge)return;
+ if(input==='exit'&&match.practice){show('training');return;}
+ const now=performance.now(),cue=challengeState(m,now);
+ if(cue.expired)return;
+ const canMove=['crease','rebounds','shot'].includes(m.id);
+ if((input==='left'||input==='right')&&canMove){
+  const lane=clamp(m.lane+(input==='left'?-1:1),0,2);
+  if(lane!==m.lane){m.fromLane=m.lane;m.lane=lane;m.movedAt=now;}
+  return;
+ }
+ if(m.id==='crease'||m.id==='rebounds'){
+  if(input!=='space')return;
+  const saved=cue.ready&&m.lane===m.target;
+  const reason=saved?'You read the shot and sealed the '+laneNames[m.target].toLowerCase()+' lane.':
+   !cue.ready?'You committed before the release. Wait until the puck leaves the stick.':
+   'The shooter went '+laneNames[m.target].toLowerCase()+'. Slide across before you make the save.';
+  finishGoalieShot(m,saved,reason);return;
+ }
+ if(m.id==='shot'){
+  if(input!=='space')return;
+  m.coverAtRelease=cue.cover;
+  const scored=m.lane!==cue.cover;
+  finishCareerChallenge(m,scored,scored?'You picked a corner the goalie left open.':'The goalie already covered that lane. Try the other side.','goal');return;
+ }
+ if(m.phase==='one-timer'){
+  if(input!=='space')return;
+  finishCareerChallenge(m,cue.ready,cue.ready?'You set up the goal with a pass and a clean one-timer.':'You swung before the puck arrived. Wait for the pass.','assist');return;
+ }
+ if(m.phase==='puck-won'){
+  if(!['one','two'].includes(input))return;
+  m.choice=input;
+  const scored=input===(m.defender===0?'one':'two');
+  finishCareerChallenge(m,scored,scored?(input==='one'?'You won the puck and took it to the net.':'You drew the defender in and set up a teammate.'):
+   'The defender covered your route. Try the other option.',input==='one'?'goal':'assist');return;
+ }
+ if(m.id==='rush'){
+  if(!['one','two'].includes(input))return;
+  m.choice=input;
+  if(!cue.ready){finishCareerChallenge(m,false,'You made your choice before the defender committed. Give the play a moment.');return;}
+  if(input==='one'){
+   finishCareerChallenge(m,m.defender===0,m.defender===0?'The defender took away the pass, so you scored on the open shot.':'The defender rushed the puck. Your teammate had the open lane.','goal');
+  }else if(m.defender===0)finishCareerChallenge(m,false,'The defender stayed in the passing lane and intercepted it.');
+  else advanceChallengeStage(m,'one-timer',now);
+  return;
+ }
+ if(input!=='space')return;
+ if(!cue.ready){finishCareerChallenge(m,false,'You turned to shield too early. Wait until the defender reaches you.');return;}
+ advanceChallengeStage(m,'puck-won',now);
+}
+
+function advanceChallengeStage(m,phase,now){
+ cancelAnimationFrame(frame);
+ m.phase=phase;m.stepAt=now;
+ sound('puck');render();
+ app.querySelector('[data-action="challenge"]')?.focus({preventScroll:true});
+ tickCareerChallenge();
+}
+
+function finishGoalieShot(m,saved,reason){
+ if(saved){match.line.sv++;m.saves++;}
+ else addGoal('them');
+ if(saved&&m.id==='rebounds'&&m.shotNumber<3){
+  cancelAnimationFrame(frame);match.moment=null;
+  const nextTarget=m.shotNumber===1?(m.target+int(1,2))%3:2-m.target;
+  showMomentResult(m,true,'Save · Rebound loose',false,()=>{
+   const now=performance.now();
+   match.moment={...m,shotNumber:m.shotNumber+1,target:nextTarget===m.target?0:nextTarget,stepAt:now,cueAt:1.9,phase:'rebound'};
+   render();app.querySelector('[data-action="challenge"]')?.focus({preventScroll:true});tickCareerChallenge();
+  });
+  return;
+ }
+ finishCareerChallenge(m,saved,saved&&m.id==='rebounds'?'Three saves in a row. You cleared the scramble.':reason);
+}
+
+function finishCareerChallenge(m,success,reason,credit){
+ cancelAnimationFrame(frame);
+ match.moment=null;
+ const defending=m.id==='crease'||m.id==='rebounds';
+ if(success){match.highlights++;if(credit)addGoal('us',credit);}
+ const label=defending?(success?(m.id==='rebounds'?'Scramble cleared':'Save made'):'Goal against'):
+  success?(credit==='assist'?'Assist · Goal':'Goal scored'):'Chance missed';
+ addFeed(match.tag,reason);
+ sound(success?'cheer':'puck');
+ if(match.practice)match.practiceResult={id:m.id,label,reason};
+ showMomentResult(m,success,label,defending?!success:success,match.practice?()=>show('practice-result'):advanceGame);
+}
+
+function practiceResultView(){
+ const result=match.practiceResult;
+ return '<section class="panel arena stack">'+heading('Practice complete',result.label,result.reason)+'<div class="row">'+
+ btn('practice-challenge','Try again','gold','data-id="'+result.id+'"')+btn('view','Back to training','quiet','data-id="training"')+'</div></section>';
+}
+
+function paintCareerChallenge(c,m,now,outcome,own,opp){
+ const still=reduceMotion(),cue=challengeState(m,now),t=Math.max(0,(now-m.stepAt)/1000);
+ const lane=lerp(laneX[m.fromLane],laneX[m.lane],still?1:clamp((now-m.movedAt)/135,0,1));
+ const progress=still?1:outcome?clamp((now-outcome.at)/430,0,1):0;
+ const shotX=laneX[m.target];
+ if(!isGoalie()&&(m.scenario==='special'||m.scenario==='chase'))rinkSkater(c,350,298,1.05,own,false,-.18);
+ if(m.id==='crease'||m.id==='rebounds'){
+  const approach=still||outcome?1:clamp(t/m.cueAt,0,1);
+  const approachX=cue.fake?laneX[m.fake]:lerp(480,shotX,approach*.8);
+  const approachY=lerp(377,m.shotNumber>1?265:298,approach);
+  const from=[approachX+26,approachY];
+  if(cue.ready&&!outcome){
+   path(c,'M'+(shotX-26)+' 189 h52 v24 h-52Z','#ffd26b94','#976822',3);
+  }
+  rinkSkater(c,lane,229,.94,own,true,(m.lane-1)*.11);
+  rinkSkater(c,approachX,approachY,1.23,opp,false,(cue.fake?m.fake-1:0)*.28);
+  if(m.shotNumber>1||m.scenario==='special')rinkSkater(c,560,288,1.05,opp,false,.12);
+  const puck=outcome?progress:cue.ready?(still ? .65 :clamp((t-m.cueAt)/.48,0,.75)):0;
+  const stop=outcome?.success?226:191;
+  rinkPuck(c,lerp(from[0],shotX,puck),lerp(from[1],stop,puck),puck>0?from:null,'#2b647e');
+  return;
+ }
+ if(m.id==='shot'){
+  const cover=outcome?m.coverAtRelease??1:cue.cover??1;
+  const start=[lane+24,lerp(366,294,still?1:clamp(t/3,0,1))];
+  rinkSkater(c,laneX[cover],228,.96,opp,true);
+  rinkSkater(c,lane,start[1],1.28,own,false,(m.lane-1)*.13);
+  if(!outcome)path(c,'M'+(lane-18)+' 181h36v20h-36Z',null,'#a8711e',4);
+  rinkPuck(c,lerp(start[0],laneX[m.lane],progress),lerp(start[1],outcome?.success?190:226,progress),outcome?start:null,'#2b647e');
+  return;
+ }
+ const onBoards=m.id==='boards';
+ const x=onBoards?733:429;
+ const y=onBoards?324:338;
+ const mate=[onBoards?560:590,273];
+ const close=still?1:clamp(t/m.cueAt,0,1);
+ const opponentX=onBoards?(m.phase==='puck-won'&&m.defender===0?591:lerp(835,770,close)):
+  m.defender===0?lerp(523,537,close):lerp(532,448,close);
+ const opponentY=onBoards?322:lerp(219,296,close);
+ if(onBoards)path(c,'M821 112 q26 100 68 307',null,'#eefaffb0',11);
+ rinkSkater(c,480,225,.95,opp,true);
+ rinkSkater(c,opponentX,opponentY,1.18,opp,false,-.15);
+ rinkSkater(c,mate[0],mate[1],1.06,own,false,-.15);
+ rinkSkater(c,x,y,1.34,own,false,.16);
+ const pass=m.phase==='one-timer'||m.choice==='two';
+ const from=m.phase==='one-timer'&&outcome?mate:[x+29,y+3];
+ const destination=outcome?.success?[m.target===1?480:laneX[m.target],193]:pass?mate:[473,237];
+ const passProgress=m.phase==='one-timer'&&!outcome?(still?(cue.ready?1:.45):clamp(t/1.55,0,1)):progress;
+ rinkPuck(c,lerp(from[0],destination[0],passProgress),lerp(from[1],destination[1],passProgress),passProgress>0?from:null,'#2b647e');
 }
 function recapHeadline(r){
  const {g,a,sv,ga}=r.line;
@@ -1542,6 +1831,8 @@ const actions={
   career.chem=50;delete career.offers;beginPro(Number(index),220);
  },
  'start-match'({id}){startMatch(id);},
+ 'practice-challenge'({id}){startChallengePractice(id);},
+ challenge({id}){challengeInput(id);},
  'fast-game'(){
   clearTimeout(timer);
   if(match.nextBeat){advanceBroadcast();return;}
@@ -1586,6 +1877,11 @@ document.addEventListener('keydown',event=>{
  const m=screen==='live'?match?.moment:null;
  if(!m&&screen!=='drill')return;
  const key=event.key;
+ if(m?.challenge){
+  const control={ArrowLeft:'left',ArrowRight:'right',' ':'space','1':'one','2':'two',Escape:'exit'}[key];
+  if(control){event.preventDefault();challengeInput(control);}
+  return;
+ }
  let index={'1':0,'2':1,'3':2}[key];
  if(screen==='drill'&&key==='ArrowLeft')index=0;
  if(screen==='drill'&&key==='ArrowRight')index=['skate','glove','blocker','post'].includes(drill.id)?1:2;
