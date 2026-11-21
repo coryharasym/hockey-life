@@ -237,6 +237,12 @@ button.quiet{background:#101d2a}.nav{gap:.45rem}.nav button{background:#101c2a}.
 .sim-buttons{justify-content:flex-end}.timed-feed .feed-divider{font-weight:900;color:var(--blue);background:#21394e;padding:.28rem .4rem;border-bottom:0;margin:.35rem 0 .1rem;border-radius:3px}
 .timed-feed li:not(.feed-divider){display:grid;grid-template-columns:3.45rem 1fr;gap:.15rem}.timed-feed li.no-clock{display:block}.timed-feed li b{font-variant-numeric:tabular-nums;color:var(--gold)}
 @media(max-width:720px){.quick-sim .broadcast-layout{grid-template-columns:1fr}.quick-sim .broadcast-feed .feed{max-height:340px}.sim-buttons{justify-content:flex-start}}
+ 
+.sim-feature.sim-feature-scoring{border-left-color:#ffd572;background:linear-gradient(115deg,#4d340d,#243044 72%);box-shadow:inset 0 0 0 1px #ffcf6755}
+.sim-feature-scoring h3{color:#ffe092;font-size:clamp(1.4rem,4vw,2rem);text-transform:uppercase}
+.sim-goal-banner{position:absolute;inset:auto .6rem .6rem;z-index:1;background:linear-gradient(105deg,#ffdf8c,#f3b846);color:#271b0b;border:1px solid #fff0bc;border-radius:4px;box-shadow:0 3px 17px #0008;text-align:center;font-size:clamp(1rem,3vw,1.55rem);font-weight:900;letter-spacing:.085em;text-transform:uppercase;padding:.36rem .6rem;overflow-wrap:anywhere}
+.timed-feed li.feed-scoring{margin:.24rem 0;padding:.38rem .5rem;background:#493614;border:1px solid #eab35880;border-left:3px solid #ffcd6c;border-radius:4px;color:#fff7e6}
+.feed-goal-label{display:block;color:#ffe092;font-size:.86rem;font-weight:900;letter-spacing:.045em;text-transform:uppercase;margin-bottom:.12rem}
 </style>
 </head>
 <body>
@@ -783,26 +789,57 @@ function updateFooter(){
  const node=document.querySelector('#footer');
  node.textContent=(screen==='slots'?'':saveMessage)|| (storageOK?'Northstar Hockey League · Autosaves on this browser':'Browser storage is unavailable. This session can be played, but progress may be lost on reload.');
 }
+let soundOutput=null;
+const soundCues={
+ horn:{wave:'triangle',level:.075,tones:[[125,0,.65],[158,0,.65],[187,0,.65],[148,.73,.48],[187,.73,.48]],crowd:.12},
+ 'away-goal':{wave:'triangle',level:.10,tones:[[215,0,.11],[145,.08,.16]],crowd:.07},
+ whistle:{wave:'sine',level:.05,tones:[[2110,0,.16],[2390,.11,.17]]},
+ buzzer:{wave:'triangle',level:.065,tones:[[132,0,.48],[180,0,.48]]},
+ save:{wave:'triangle',level:.08,tones:[[240,0,.045],[104,.028,.14]]},
+ puck:{wave:'triangle',level:.09,tones:[[235,0,.055],[150,.018,.08]]},
+ cheer:{wave:'sine',level:.11,tones:[[385,0,.11],[520,.09,.16]]}
+};
 function initAudio(){
  if(muted)return;
- try{audio??=new (window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume().catch(()=>{});}catch{}
+ try{
+  audio??=new (window.AudioContext||window.webkitAudioContext)();
+  if(!soundOutput){
+   soundOutput=audio.createGain();
+   soundOutput.connect(audio.destination);
+  }
+  if(audio.state==='suspended')audio.resume().catch(()=>{});
+ }catch{}
+}
+function stopSound(){
+ soundOutput?.disconnect();
+ soundOutput=null;
 }
 function sound(kind){
  if(muted)return;
  initAudio();
- if(!audio)return;
+ if(!soundOutput)return;
  const now=audio.currentTime;
- const tones=kind==='horn'?[[125,0,.65],[158,0,.65],[187,0,.65],[148,.73,.48],[187,.73,.48]]:kind==='puck'?[[180,0,.08]]:[[385,0,.11],[520,.09,.16]];
+ const {wave,level,tones,crowd}=soundCues[kind];
  for(const [freq,start,duration] of tones){
   const osc=audio.createOscillator(),amp=audio.createGain(),t=now+start;
-  osc.type=kind==='horn'?'triangle':'sine';osc.frequency.value=freq;
-  amp.gain.setValueAtTime(.001,t);amp.gain.exponentialRampToValueAtTime(kind==='horn'?.075:.11,t+.018);
-  amp.gain.exponentialRampToValueAtTime(.001,t+duration);osc.connect(amp).connect(audio.destination);osc.start(t);osc.stop(t+duration);
+  osc.type=wave;osc.frequency.value=freq;
+  amp.gain.setValueAtTime(.001,t);amp.gain.exponentialRampToValueAtTime(level,t+.014);
+  amp.gain.exponentialRampToValueAtTime(.001,t+duration);
+  osc.connect(amp).connect(soundOutput);osc.start(t);osc.stop(t+duration);
  }
- if(kind==='horn'){
+ if(crowd){
   const buffer=audio.createBuffer(1,audio.sampleRate,audio.sampleRate),values=buffer.getChannelData(0);
-  for(let i=0;i<values.length;i++)values[i]=(Math.random()*2-1)*.25;
-  const crowd=audio.createBufferSource(),amp=audio.createGain();crowd.buffer=buffer;amp.gain.setValueAtTime(.1,now);amp.gain.exponentialRampToValueAtTime(.001,now+1);crowd.connect(amp).connect(audio.destination);crowd.start();
+  let seed=1613,swell=0;
+  for(let i=0;i<values.length;i++){
+   seed=(Math.imul(seed,1664525)+1013904223)>>>0;
+   swell=.78*swell+.22*(seed/2**31-1);
+   values[i]=swell*.45;
+  }
+  const rush=audio.createBufferSource(),amp=audio.createGain();
+  rush.buffer=buffer;amp.gain.setValueAtTime(.001,now);
+  amp.gain.exponentialRampToValueAtTime(crowd,now+.15);
+  amp.gain.exponentialRampToValueAtTime(.001,now+1);
+  rush.connect(amp).connect(soundOutput);rush.start(now);
  }
 }
 function skill(attr){
@@ -1143,15 +1180,16 @@ function preView(){
 function board(home,away,score){
  return '<div class="scoreboard"><div>'+crest(home,true)+'<p><strong>'+teams[home].code+'</strong><br><small class="muted">'+teams[home].mascot+'</small></p></div><div class="score" aria-label="'+(score==='VS'?'Versus':score)+'">'+score+'</div><div>'+crest(away,true)+'<p><strong>'+teams[away].code+'</strong><br><small class="muted">'+teams[away].mascot+'</small></p></div></div>';
 }
-function addFeed(tag,text){
- const clock=match.sim?.feedClock;
- match.feed.push(clock===null||clock===undefined?[tag,text]:[tag,text,clock]);
+function addFeed(tag,text,call=null){
+ const clock=match.sim?.feedClock??null;
+ match.feed.push(call?[tag,text,clock,call]:clock===null?[tag,text]:[tag,text,clock]);
 }
 function startMatch(mode){
  const spotlight=career.phase==='playoffs'||career.gp%4===3;
  match={mode,team:career.team,opp:nextOpponent(),period:0,us:0,them:0,statGoals:0,statAgainst:0,feed:[],line:stats(),moment:null,extra:false,shootout:null,minutes:60,spotlight,highlightPeriod:career.games%3===1?2:3,playHistory:[],settled:false,highlights:0};
  if(mode==='sim')match.sim={stage:0,queue:[],periods:[],paused:false,draining:false,current:null};
  addFeed('LIVE',teamName(match.team)+' and '+teamName(match.opp)+' are on the ice.');
+ if(match.sim)initAudio();
  show('live');queuePeriod(600);
 }
 function queuePeriod(delay=850){
@@ -1162,9 +1200,10 @@ function queuePeriod(delay=850){
 }
 function addGoal(side,credit){
  match.lastGoal={side,period:match.period};
+ const call=match.sim?simGoalCall(match.sim.current.label,side):null;
  if(side==='them'){
   match.them++;match.statAgainst++;
-  addFeed(match.tag,teams[match.opp].star+' scores for '+teams[match.opp].code+' · '+match.us+'–'+match.them+'.');
+  addFeed(match.tag,teams[match.opp].star+' scores for '+teams[match.opp].code+' · '+match.us+'–'+match.them+'.',call);
   return;
  }
  match.us++;match.statGoals++;
@@ -1172,12 +1211,12 @@ function addGoal(side,credit){
   match.line.g++;
   match.celebration=career.equipped.celebration;
   const celebration=gear.find(g=>g.id===career.equipped.celebration).name;
-  addFeed(match.tag,playerName()+' scores! '+celebration+' celebration · '+match.us+'–'+match.them+'.');
+  addFeed(match.tag,playerName()+' scores! '+celebration+' celebration · '+match.us+'–'+match.them+'.',call);
  }else if(credit==='assist'){
   match.line.a++;
-  addFeed(match.tag,playerName()+' sets up the goal · '+match.us+'–'+match.them+'.');
- }else addFeed(match.tag,teams[match.team].star+' scores for '+teams[match.team].code+' · '+match.us+'–'+match.them+'.');
- if(!match.sim?.draining)sound('horn');
+  addFeed(match.tag,playerName()+' sets up the goal · '+match.us+'–'+match.them+'.',call);
+ }else addFeed(match.tag,teams[match.team].star+' scores for '+teams[match.team].code+' · '+match.us+'–'+match.them+'.',call);
+ if(!match.sim)sound('horn');
 }
 function scoringOdds(){
  const condition=(Math.min(career.energy,85)-85)*.0014+(career.chem-50)*.0025+career.hype*.028;
@@ -1309,10 +1348,13 @@ function feedView(feed){
  const timed=feed.some(entry=>entry.length>2);
  let group=null;
  const labels={LIVE:'Pre-game',P1:'First period',P2:'Second period',P3:'Third period',OT:'Overtime','2OT':'Second overtime',SO:'Shootout'};
- return '<ol class="feed'+(timed?' timed-feed':'')+'" aria-label="Play-by-play" aria-live="polite">'+feed.map(([tag,line,clock])=>{
+ return '<ol class="feed'+(timed?' timed-feed':'')+'" aria-label="Play-by-play" aria-live="polite">'+feed.map(([tag,line,clock,call])=>{
   const heading=timed&&tag!==group?'<li class="feed-divider">'+(labels[tag]??tag)+'</li>':'';
   group=tag;
-  return heading+'<li'+(timed&&!clock?' class="no-clock"':'')+'>'+(timed?(clock?'<b>'+clock+'</b> ':''):'<b>'+tag+'</b> ')+line+'</li>';
+  const classes=[timed&&!clock?'no-clock':'',call?'feed-scoring':''].filter(Boolean).join(' ');
+  const time=timed?(clock?'<b>'+clock+'</b> ':''):'<b>'+tag+'</b> ';
+  return heading+'<li'+(classes?' class="'+classes+'"':'')+'>'+time+
+   (call?'<span><strong class="feed-goal-label">'+call+'</strong> '+line+'</span>':line)+'</li>';
  }).join('')+'</ol>';
 }
 function launchMoment(id,round=1,successes=0){
@@ -1563,10 +1605,16 @@ function showMomentResult(moment,success,label,goal,next){
  }
  queuePeriod(820);
 }
+const simBeatCues={opening:'whistle',horn:'buzzer',chance:'puck',save:'save',round:'puck'};
+const simBeatDelay={horn:3150,goal:4150,decision:4150,opening:1500};
 const simPeriodNames=['Pre-game','First period','Second period','Third period','Overtime','Second overtime','Shootout'];
 
 function simBeat(kind,clock,label,text,side=null,credit=''){
  return {kind,clock,label,text,side,credit};
+}
+function simGoalCall(label,side){
+ const team=teams[side==='us'?match.team:match.opp];
+ return label+' · '+team.code;
 }
 function planRegulation(period){
  const {saves,goals}=rollPeriod(false);
@@ -1659,26 +1707,30 @@ function nextQuickSimBeat(){
  }else if(beat.kind==='decision'){
   sim.shootoutWinner=beat.homeWins?'us':'them';
   if(beat.homeWins)match.us++;else match.them++;
+  beat.side=sim.shootoutWinner;
   beat.text=teams[beat.homeWins?match.team:match.opp].city+' takes the shootout · '+match.us+'–'+match.them+'.';
-  addFeed('SO',beat.text);sim.finished=true;
+  addFeed('SO',beat.text,simGoalCall(beat.label,beat.side));
+  sim.finished=true;
  }else{
   if(beat.kind==='round'){
    sim.shootoutScore[0]+=beat.home;sim.shootoutScore[1]+=beat.away;
    beat.text+=' Shootout: '+sim.shootoutScore.join('–')+'.';
   }
-  addFeed(match.tag,beat.text);
+  const call=beat.kind==='round'&&beat.home+beat.away?simGoalCall('Shootout goal',beat.home?'us':'them'):null;
+  addFeed(match.tag,beat.text,call);
  }
  sim.feedClock=null;
  if(sim.draining)return;
+ const scoring=beat.kind==='goal'||beat.kind==='decision';
+ sound(scoring?(beat.side==='us'?'horn':'away-goal'):simBeatCues[beat.kind]);
  const focus=document.activeElement?.dataset.action;
  render();
- if(focus==='sim-pause'||focus==='fast-game')app.querySelector('[data-action="'+focus+'"]')?.focus({preventScroll:true});
+ if(['sim-pause','fast-game','mute'].includes(focus))document.querySelector('[data-action="'+focus+'"]')?.focus({preventScroll:true});
  animateQuickSimRink();
- const delay=beat.kind==='horn'?3150:beat.kind==='goal'||beat.kind==='decision'?3050:beat.kind==='opening'?1500:2050;
- queuePeriod(delay);
+ queuePeriod(simBeatDelay[beat.kind]??2050);
 }
 function finishQuickSim(){
- clearTimeout(timer);
+ clearTimeout(timer);stopSound();
  match.sim.draining=true;
  match.sim.paused=false;
  while(!match.settled)nextQuickSimBeat();
@@ -1688,9 +1740,10 @@ function toggleQuickSim(){
  if(!sim||match.settled)return;
  sim.paused=!sim.paused;
  clearTimeout(timer);cancelAnimationFrame(frame);
+ if(sim.paused)stopSound();
  render();
  app.querySelector('[data-action="sim-pause"]')?.focus({preventScroll:true});
- if(!sim.paused)queuePeriod(sim.current?.kind==='horn'?2500:1500);
+ if(!sim.paused)queuePeriod(simBeatDelay[sim.current?.kind]??1500);
 }
 function quickSimPeriodTable(periods,home,away,decider=null){
  if(!periods?.length)return '';
@@ -1702,10 +1755,12 @@ function quickSimPeriodTable(periods,home,away,decider=null){
 }
 function quickSimView(){
  const sim=match.sim,beat=sim.current,clock=beat?.clock;
- const feature='<div class="sim-feature" role="status"><div class="row spread"><p class="eyebrow">'+simPeriodNames[sim.stage]+'</p>'+
-  (Number.isInteger(clock)?'<span class="sim-clock">'+formatClock(clock)+'</span>':'')+'</div><h3>'+(beat?.label??'Teams take the ice')+'</h3><p>'+(beat?.text??teamName(match.team)+' vs. '+teamName(match.opp))+'</p></div>';
+ const scoring=beat?.kind==='goal'||beat?.kind==='decision';
+ const goalCall=scoring?simGoalCall(beat.label,beat.side):'';
+ const feature='<div class="sim-feature'+(scoring?' sim-feature-scoring':'')+'" role="status"><div class="row spread"><p class="eyebrow">'+simPeriodNames[sim.stage]+'</p>'+
+  (Number.isInteger(clock)?'<span class="sim-clock">'+formatClock(clock)+'</span>':'')+'</div><h3>'+(goalCall||(beat?.label??'Teams take the ice'))+'</h3><p>'+(beat?.text??teamName(match.team)+' vs. '+teamName(match.opp))+'</p></div>';
  return '<section class="broadcast-shell quick-sim stack">'+liveScore()+'<div class="broadcast-layout"><div class="rink-stage">'+rinkCanvas()+
-  '<div class="rink-chip">'+(sim.paused?'Paused':beat?.kind==='horn'&&sim.stage<3?'Intermission':'Quick Sim')+'</div></div>'+
+  '<div class="rink-chip">'+(sim.paused?'Paused':beat?.kind==='horn'&&sim.stage<3?'Intermission':'Quick Sim')+'</div>'+(scoring?'<div class="sim-goal-banner" aria-hidden="true">'+goalCall+'</div>':'')+'</div>'+
   '<aside class="panel broadcast-feed"><h3>Play-by-play</h3>'+feedView(match.feed)+'</aside><div class="panel broadcast-controls">'+feature+
   quickSimPeriodTable(sim.periods,match.team,match.opp,sim.shootoutWinner)+'<div class="row sim-buttons">'+btn('sim-pause',sim.paused?'Resume broadcast':'Pause broadcast','quiet')+
   btn('fast-game','Finish Quick Sim','gold')+'</div></div></div></section>';
@@ -2359,7 +2414,7 @@ const actions={
   muted=!muted;saveSound();
   const button=document.querySelector('[data-action="mute"]');
   button.textContent=muted?'Sound off':'Sound on';button.setAttribute('aria-pressed',String(!muted));
-  if(!muted) sound('cheer');
+  if(muted)stopSound();else sound('cheer');
  },
  slots(){slot=-1;career=null;refreshSlots();show('slots');},
  new({index}){
