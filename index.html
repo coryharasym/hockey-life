@@ -538,16 +538,6 @@ const badgeShapes = {
  berg:'M10 35h44v4H10Zm5-4 8-12 6 4 9-12 11 20Zm1 12h32l-16 8Z',
  mountain:'M9 43 25 22l6 6L40 12l15 31H9Zm25-12 6-4 6 4-6-11Z'
 };
-function paintBadge(canvas,team){
- const ctx=canvas.getContext('2d');
- ctx.clearRect(0,0,64,64);
- const shell=new Path2D('M32 2 57 10v23c0 12-12 21-25 29C19 54 7 45 7 33V10Z');
- const fill=ctx.createLinearGradient(0,0,60,64);
- fill.addColorStop(0,team.color);fill.addColorStop(1,'#071528');
- ctx.fillStyle=fill;ctx.fill(shell);ctx.strokeStyle=team.accent;ctx.lineWidth=2;ctx.stroke(shell);
- ctx.fillStyle=team.accent;ctx.fill(new Path2D(badgeShapes[team.mark]),'evenodd');
- ctx.font='800 8px system-ui';ctx.textAlign='center';ctx.fillText(team.code,32,54);
-}
 function path(ctx,d,fill,stroke,width=2){
  const shape=new Path2D(d);
  if(fill){ctx.fillStyle=fill;ctx.fill(shape);}
@@ -598,7 +588,7 @@ function paintPortrait(canvas,team,number,goalie,gearIds={}){
  }
  c.restore();
 }
-function crest(id,large=false){return '<canvas class="crest '+(large?'large':'')+'" width="64" height="64" data-crest="'+id+'" aria-hidden="true"></canvas>';}
+function crest(id,large=false){return '<canvas class="crest '+(large?'large':'')+'" width="144" height="144" data-crest="'+id+'" aria-hidden="true"></canvas>';}
 function drawArt(){
  document.querySelectorAll('[data-player-photo]').forEach(canvas=>paintPlayerPhoto(canvas));
  document.querySelectorAll('[data-fitting-room]').forEach(paintFittingRoom);
@@ -607,6 +597,156 @@ function drawArt(){
   const p=canvas.dataset.portrait==='career'?career:null;
   paintPortrait(canvas,p?playerPalette():teams[0],p?.number??19,p?.role==='goalie',p?.equipped);
  });
+}
+// Paths are drawn on a shared 96 px grid so all sixteen marks read at scoreboard size.
+const crestFrames={
+ cut:'M48 5 75 13 91 35 87 67 69 86 48 92 27 86 9 67 5 35 21 13Z',
+ shield:'M48 5 85 15 90 31 83 65Q74 83 48 92 22 83 13 65L6 31 11 15Z',
+ round:'M48 5C72 5 91 24 91 48S72 91 48 91 5 72 5 48 24 5 48 5Z',
+ diamond:'M48 5 90 28 90 67 48 92 6 67 6 28Z'
+};
+const crestDesigns={
+ flake:{
+  frame:'cut',
+  rim:'M11 49 25 34 42 27 32 41 13 63ZM85 48 72 62 54 69 64 55 84 35Z',
+  mark:'M48 15 54 27 53 37 63 29 76 29 71 40 61 45 72 49 79 61 65 63 55 57 56 69 48 82 40 69 41 57 31 63 17 61 24 49 35 45 25 40 20 29 33 29 43 37 42 27Z',
+  dark:'M48 30 52 42 65 39 58 48 65 55 53 54 48 66 43 54 31 55 38 48 31 39 44 42Z',
+  shine:'M48 33 52 44 61 48 52 51 48 61 44 51 35 48 44 44Z'
+ },
+ bolt:{
+  frame:'diamond',
+  rim:'M13 52 31 52 25 59 14 59ZM62 27 81 27 77 33 59 33ZM64 69H82L77 75H58Z',
+  mark:'M46 14 72 14 59 37 79 37 58 58 40 81 42 58 23 58Z',
+  dark:'M47 15 56 15 36 50 53 50 45 66 42 58 23 58Z',
+  shine:'M38 53 56 53 48 68 60 58 74 41 55 41 65 23 59 27Z'
+ },
+ wave:{
+  frame:'round',
+  rim:'M13 57Q32 83 53 81T83 66Q61 84 30 70Z',
+  mark:'M13 66Q24 65 26 53C29 31 42 20 62 20 74 20 83 27 86 36 74 29 64 32 61 40 57 48 66 56 76 53L84 49Q80 64 66 70 55 76 44 66 33 61 27 70 18 74 13 66Z',
+  dark:'M28 63C32 30 50 19 68 24 55 26 49 38 52 48 56 62 69 64 77 58 69 71 54 70 45 60 40 55 34 57 28 63Z',
+  shine:'M39 37Q56 14 76 28 61 26 52 39 48 50 56 56 43 53 44 43ZM15 67Q23 65 26 59L25 68 21 71Z'
+ },
+ flame:{
+  frame:'shield',
+  rim:'M17 59 29 66 28 73 18 66ZM69 67 80 59 78 68 68 73Z',
+  mark:'M48 13Q55 29 47 39 45 43 50 50 57 48 58 32 75 45 76 60 78 76 57 83L39 83Q18 75 21 59 22 48 36 38 32 53 43 58 34 46 39 33Z',
+  dark:'M48 31Q52 42 45 52 41 57 48 65 54 63 55 53 68 61 65 68 63 77 51 78 39 78 34 67 30 58 39 52 38 61 44 62 37 54 40 47Z',
+  shine:'M48 59Q59 65 53 73 48 78 41 72 39 68 44 64 43 68 47 69 50 66 48 59Z'
+ },
+ wolf:{
+  frame:'cut',
+  rim:'M12 38 28 49 18 53ZM84 38 68 49 78 53Z',
+  mark:'M20 14 38 25 48 22 58 25 76 14 73 39 82 59 67 58 68 68 58 67 48 82 38 67 28 68 29 58 14 59 23 39Z',
+  dark:'M27 24 37 36 46 32 43 51 35 58 28 53 34 43 25 39ZM69 24 59 36 50 32 53 51 61 58 68 53 62 43 71 39ZM37 60 48 57 59 60 55 67 48 72 41 67Z',
+  shine:'M30 42 42 46 38 50 31 46ZM66 42 54 46 58 50 65 46ZM45 64H51L48 68Z'
+ },
+ crown:{
+  frame:'shield',
+  rim:'M13 43 23 49 18 53ZM83 43 73 49 78 53ZM36 76H60L48 83Z',
+  mark:'M19 30 32 42 39 34 48 18 57 34 64 42 77 30 70 63 26 63Z M27 68H69L65 73H31Z',
+  dark:'M22 38 34 51 40 44 48 31 55 44 63 51 74 38 69 61H27Z',
+  shine:'M48 43 55 51 48 58 41 51Z M34 52l4 4-4 4-4-4Zm28 0 4 4-4 4-4-4Z'
+ },
+ tower:{
+  frame:'shield',
+  rim:'M16 52 27 44 26 58 18 63ZM80 52 69 44 70 58 78 63Z',
+  mark:'M23 20H33V30H41V17H55V30H63V20H73V42L65 49 67 65 75 69 71 76H25L21 69 29 65 31 49 23 42Z',
+  dark:'M29 39H67L62 45H34Z M42 61V53Q48 45 54 53V61H60V68H36V61Z',
+  shine:'M45 52 48 48 51 52V61H45Z M44 23 48 19 52 23 48 29Z'
+ },
+ anchor:{
+  frame:'round',
+  rim:'M13 37 25 29 27 34 18 43ZM83 37 71 29 69 34 78 43ZM13 62Q23 69 29 69L21 72Z M83 62Q73 69 67 69L75 72Z',
+  mark:'M48 15A11 11 0 0 1 53 36V44H63V52H53V66Q63 65 67 57H61L74 46 83 58H76Q70 77 48 82 26 77 20 58H13L22 46 35 57H29Q33 65 43 66V52H33V44H43V36A11 11 0 0 1 48 15Z M48 21A5 5 0 1 0 48 31 5 5 0 0 0 48 21Z',
+  dark:'M44 39 48 42 48 75Q30 71 24 61 32 70 44 71Z',
+  shine:'M49 38H51V69Q61 68 68 62 62 72 49 75Z'
+ },
+ aurora:{
+  frame:'round',
+  rim:'M13 60Q26 77 48 80T82 68Q55 86 28 74Z',
+  mark:'M15 63C30 25 60 42 81 18 77 47 42 38 15 63Z M24 71C39 42 66 62 82 37 77 65 50 57 24 71Z M53 24 57 13 61 23 70 26 61 29 57 36 52 29 43 26Z',
+  dark:'M24 55Q40 31 64 31 50 39 39 42Z M36 64Q52 51 72 52L61 57Z',
+  shine:'M32 48C53 32 63 36 77 25 70 35 58 38 48 40Z M57 20 60 26 57 31 54 26Z'
+ },
+ whale:{
+  frame:'round',
+  rim:'M13 68Q29 81 49 81 65 82 84 65 75 84 51 87 29 85 13 68Z',
+  mark:'M13 56Q25 56 35 46L42 28 44 43Q56 30 72 34 84 36 85 47L79 52Q75 68 54 72 35 75 23 65L13 68 16 61Z',
+  dark:'M19 59Q35 53 47 42 59 32 73 37 79 38 81 43L73 43Q62 39 54 44 49 47 52 51 70 56 77 51 71 64 58 66 41 68 30 61Z',
+  shine:'M62 42q8-1 12 4-4 5-11 3-5-2-1-7Z M40 64q11 5 25-2-8 8-20 6Z'
+ },
+ bison:{
+  frame:'cut',
+  rim:'M15 56 25 59 32 72 20 68ZM81 56 71 59 64 72 76 68Z',
+  mark:'M12 21Q23 28 34 25L40 20 49 23 56 20 63 25Q75 28 84 21 81 39 68 42L68 53 62 64 60 74 48 81 36 74 34 64 28 53 28 42Q15 39 12 21Z',
+  dark:'M34 32 42 28 48 34 54 28 62 32 65 46 57 48 55 58 63 63 55 72H41L33 63 41 58 39 48 31 46Z',
+  shine:'M31 44 41 46 39 50 33 49ZM65 44 55 46 57 50 63 49ZM41 63H55L52 69H44Z'
+ },
+ comet:{
+  frame:'round',
+  rim:'M14 74 31 69 24 77 17 80ZM24 52 33 46 42 46 35 52Z',
+  mark:'M11 69 36 49 29 49 48 34Q54 17 69 19 83 20 85 34 86 47 73 54L44 68 48 60 24 77 31 66Z',
+  dark:'M36 62 56 41Q58 30 66 28 73 27 75 34 77 42 68 46 63 47 60 45Z',
+  shine:'M65 22Q78 20 81 33 77 27 70 25 60 25 54 29 58 23 65 22Z M43 58 53 52 59 50 50 60Z'
+ },
+ anvil:{
+  frame:'diamond',
+  rim:'M48 14 53 23 48 29 43 23Z M28 22 32 29 23 26Z M68 22 64 29 73 26Z',
+  mark:'M14 37H25L32 42H79L75 49 63 55 53 60 56 69H67V77H28V69H38L42 61 34 57 24 54 16 47Z',
+  dark:'M21 45 39 49H72L63 54H37Z M43 59H52L49 68H39ZM33 72H63V75H33Z',
+  shine:'M35 43H76L73 46H37Z M44 69H53L51 71H42Z'
+ },
+ beam:{
+  frame:'cut',
+  rim:'M14 31 22 27 24 32 15 39ZM82 31 74 27 72 32 81 39ZM14 65 25 70 21 75 16 72ZM82 65 71 70 75 75 80 72Z',
+  mark:'M19 20H43V31H36V40H60V31H53V20H77V31H71V65H77V76H53V65H60V52H36V65H43V76H19V65H25V31H19Z',
+  dark:'M29 31H35V67H29Z M63 31H69V67H63Z M38 45H58V49H38Z',
+  shine:'M22 23H40V26H22Z M56 23H74V26H56Z M22 69H40V72H22Z M56 69H74V72H56Z'
+ },
+ berg:{
+  frame:'diamond',
+  rim:'M11 51 20 47 26 51 21 57 14 56ZM85 51 76 47 70 51 75 57 82 56Z',
+  mark:'M17 53 35 29 44 35 55 17 63 22 80 53Z M19 59H77L61 71 50 84 36 74Z',
+  dark:'M29 52 42 38 44 42 56 21 56 36 67 48 75 52Z M23 61H72L58 66 48 77 39 69Z',
+  shine:'M36 33 43 38 33 49 23 51Z M56 21l7 4 11 21-14-11Z M19 54H78V57H19Z'
+ },
+ mountain:{
+  frame:'shield',
+  rim:'M14 54 22 45 25 50 17 62ZM82 54 74 45 71 50 79 62ZM33 76H63L48 85Z',
+  mark:'M12 66 31 39 39 45 55 18 83 66 71 73H25Z',
+  dark:'M18 65 32 45 38 51 55 24 55 42 68 55 74 65Z M29 69 37 62 46 66 58 58 68 69Z',
+  shine:'M31 44 38 51 33 50 29 54 24 55Z M55 23 70 46 61 43 56 47 52 39 46 43Z'
+ }
+};
+const crestCache=new Map();
+function paintBadge(canvas,team){
+ if(!crestCache.has(team.mark)){
+  const emblem=document.createElement('canvas');
+  emblem.width=192;emblem.height=192;
+  const ctx=emblem.getContext('2d'),g=crestDesigns[team.mark];
+  ctx.scale(2,2);ctx.lineJoin='round';ctx.lineCap='round';
+  const base=ctx.createLinearGradient(12,9,82,88);
+  base.addColorStop(0,team.color);base.addColorStop(.55,'#121f34');base.addColorStop(1,'#080e1a');
+  const metal=ctx.createLinearGradient(12,12,77,81);
+  metal.addColorStop(0,'#f6fbff');metal.addColorStop(.48,team.accent);metal.addColorStop(1,team.color);
+  const shell=crestFrames[g.frame];
+  path(ctx,shell,null,'#050b14',6);
+  path(ctx,shell,base,team.accent,2.6);
+  ctx.save();
+  ctx.translate(48,48);ctx.scale(.914,.914);ctx.translate(-48,-48);
+  path(ctx,shell,null,team.color,1.55);
+  ctx.restore();
+  path(ctx,g.rim,team.color);
+  ctx.strokeStyle='#070d18';ctx.lineWidth=4.1;ctx.stroke(new Path2D(g.mark));
+  ctx.fillStyle=metal;ctx.fill(new Path2D(g.mark),'evenodd');
+  path(ctx,g.dark,team.color);
+  path(ctx,g.shine,team.accent);
+  crestCache.set(team.mark,emblem);
+ }
+ const ctx=canvas.getContext('2d');
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+ ctx.drawImage(crestCache.get(team.mark),0,0,canvas.width,canvas.height);
 }
 const app=document.querySelector('#app');
 const storageKey='pro-hockey-careers-v1';
