@@ -245,8 +245,6 @@ function getSaved(key,fallback){
  try{return JSON.parse(localStorage.getItem(key))??fallback;}
  catch{return fallback;}
 }
-let slots=getSaved(storageKey,[null,null,null]);
-if(!Array.isArray(slots)||slots.length!==3) slots=[null,null,null];
 let muted=getSaved('pro-hockey-muted',true),slot=-1,career=null,screen='slots',notice='',audio=null,timer=0,frame=0,match=null,drill=null,quiz=null;
 const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
 const int=(min,max)=>Math.floor(Math.random()*(max-min+1))+min;
@@ -260,18 +258,9 @@ const stage=()=>career.phase==='junior'?'Junior season':career.phase==='regular'
 const stats=()=>({gp:0,w:0,g:0,a:0,plus:0,sv:0,ga:0,so:0,seconds:0,blocks:0});
 const statName={shoot:'Shooting',speed:'Speed',sense:'Hockey IQ',reflex:'Reflexes'};
 const rounds=['Quarterfinal','Semifinal','Northstar Cup Final'];
-function persist(){
- if(career&&slot>=0)slots[slot]=career;
- try{
-  localStorage.setItem(storageKey,JSON.stringify(slots));
-  localStorage.setItem('pro-hockey-muted',JSON.stringify(muted));
-  storageOK=true;
- }catch{storageOK=false;}
- updateFooter();
-}
 function updateFooter(){
  const node=document.querySelector('#footer');
- node.textContent=storageOK?'Northstar Hockey League · Autosaves on this browser':'Browser storage is unavailable. This session can be played, but progress may be lost on reload.';
+ node.textContent=(screen==='slots'?'':saveMessage)|| (storageOK?'Northstar Hockey League · Autosaves on this browser':'Browser storage is unavailable. This session can be played, but progress may be lost on reload.');
 }
 function initAudio(){
  if(muted)return;
@@ -456,8 +445,76 @@ function statsView(p,all=false){
  if(isGoalie())return metrics([['Wins',p.w],['Save %',saveLabel(p)],['GAA',goalAverage(p)],['Shutouts',p.so]]);
  return metrics([['Goals',p.g],['Assists',p.a],['Points',p.g+p.a],[all?'Plus / minus':'+/−',p.plus>0?'+'+p.plus:p.plus]]);
 }
+const slotKey=index=>storageKey+'-slot-'+index;
+const pendingSaves=new Map();
+let saveMessage='';
+function storedSlot(index){
+ const current=localStorage.getItem(slotKey(index));
+ if(current!==null&&current!==undefined)return current;
+ const old=JSON.parse(localStorage.getItem(storageKey)??'null');
+ return JSON.stringify(old?.[index]??null);
+}
+const slotVersions=[null,null,null].map((_,index)=>{
+ try{return storedSlot(index);}
+ catch{storageOK=false;return 'null';}
+});
+let slots=slotVersions.map(raw=>{
+ try{return JSON.parse(raw);}
+ catch{return null;}
+});
+function refreshSlots(){
+ if(!storageOK)return;
+ try{
+  for(let index=0;index<slots.length;index++){
+   if(pendingSaves.has(index)||index===slot&&screen!=='slots')continue;
+   const raw=storedSlot(index);
+   slots[index]=JSON.parse(raw);slotVersions[index]=raw;
+  }
+ }catch{storageOK=false;}
+}
+function writeSlot(index,value){
+ const previous=slotVersions[index],raw=JSON.stringify(value);
+ slotVersions[index]=raw;slots[index]=value;
+ const commit=()=>{
+  try{
+   if(storedSlot(index)!==previous){
+    saveMessage='This career changed in another tab. The latest saved progress is in Careers.';
+    return false;
+   }
+   localStorage.setItem(slotKey(index),raw);
+   storageOK=true;saveMessage='';
+  }catch{storageOK=false;}
+  updateFooter();
+  return true;
+ };
+ const recover=()=>{
+  if(index===slot){slot=-1;career=null;}
+  refreshSlots();
+  if(slot<0)show('slots');else updateFooter();
+ };
+ const locks=globalThis.navigator?.locks;
+ if(!locks){
+  if(!commit())recover();
+  return;
+ }
+ const write=locks.request(slotKey(index),commit).catch(commit);
+ pendingSaves.set(index,write);
+ write.then(ok=>{
+  if(pendingSaves.get(index)!==write)return;
+  pendingSaves.delete(index);
+  if(!ok)recover();
+ });
+}
+function persist(){
+ if(career&&slot>=0)writeSlot(slot,career);
+ else updateFooter();
+}
+function saveSound(){
+ try{localStorage.setItem('pro-hockey-muted',JSON.stringify(muted));}
+ catch{}
+}
 function slotsView(){
- return '<section class="hero panel"><canvas class="hero-art" data-portrait="welcome" aria-hidden="true"></canvas><div class="copy"><p class="eyebrow">Northstar Hockey League</p><h1>Pro Hockey</h1><h2>Career Mode</h2><p>Get drafted, take the ice, and chase the Northstar Cup.</p></div></section><section class="grid slots" aria-label="Career slots">'+slots.map((c,i)=>{
+ return (saveMessage?'<p class="panel notice" role="status">'+saveMessage+'</p>':'')+'<section class="hero panel"><canvas class="hero-art" data-portrait="welcome" aria-hidden="true"></canvas><div class="copy"><p class="eyebrow">Northstar Hockey League</p><h1>Pro Hockey</h1><h2>Career Mode</h2><p>Get drafted, take the ice, and chase the Northstar Cup.</p></div></section><section class="grid slots" aria-label="Career slots">'+slots.map((c,i)=>{
   const data='data-index="'+i+'"';
   return '<article class="panel slot"><p class="eyebrow">Career '+(i+1)+'</p>'+(c?'<div class="row">'+crest(c.team)+'<div><h3>'+escapeHTML(c.name)+' · #'+c.number+'</h3><span class="muted">'+teamName(c.team)+' · '+positions[c.role][0]+'</span></div></div>':'<h3>Open slot</h3>')+'<div class="row">'+btn(c?'resume':'new',c?'Continue career':'Create player','gold',data)+(c?btn('delete','Delete','quiet danger',data):'')+'</div></article>';
  }).join('')+'</section>';
@@ -535,6 +592,7 @@ function quizView(){
  return '<section class="panel arena stack">'+heading('Coach’s Quiz',question)+(quiz.done?'<p class="'+(quiz.correct?'good':'muted')+'" role="status">'+(quiz.correct?'Correct! +45 XP and +4 chemistry.':'Correct answer · '+answer)+'</p>'+btn('view','Back to training','gold','data-id="training"'):'<div class="grid">'+quiz.answers.map((value,i)=>btn('answer',value,'','data-index="'+i+'"')).join('')+'</div>')+'</section>';
 }
 function render(){
+ if(!career&&screen!=='create')screen='slots';
  const locked=screen==='live'||screen==='drill'||screen==='quiz'&&!quiz?.done;
  document.querySelector('#tools').innerHTML=btn('mute',muted?'Sound off':'Sound on','quiet','aria-pressed="'+!muted+'"')+(career&&!locked?btn('slots','Careers','quiet'):'');
  let body='';
@@ -724,7 +782,7 @@ function recapView(){
 function launchMoment(id,round=1,successes=0){
  let [title,instruction,kind]=highlightInfo[id];
  const now=performance.now(),h=match.shootout;
- if(h)title+=' · Round '+h.round;
+ if(h)title+=(h.round>3?' · Sudden death':'')+' · Round '+h.round;
  const feint=id==='deke'||id==='shootout'&&h.round%2===0;
  const skillBonus=isGoalie()?skill('reflex'):skill('sense')+(id==='one'||id==='breakaway'||id==='penalty'?skill('shoot'):0);
  match.moment={id,title,instruction,kind,round,successes,target:int(0,2),fake:int(0,2),feint,started:now,ready:now+(feint?980:525),deadline:now+(kind==='mash'?3000:kind==='reaction'?(feint?980:525)+clamp(1100+skillBonus*24,1100,1560):5500+skillBonus*40),hits:0,zoneStart:.38-Math.min(skillBonus*.006,.12),zoneEnd:.65+Math.min(skillBonus*.006,.12)};
@@ -780,11 +838,11 @@ function resolveMoment(success){
   const h=match.shootout;
   h.us+=Number(isGoalie()?Math.random()<.60:success);
   h.them+=Number(isGoalie()?!success:Math.random()<.53);
-  addFeed('SO','Round '+h.round+' · '+teams[match.team].code+' '+h.us+'–'+h.them+' '+teams[match.opp].code+'.');
+  addFeed('SO',(h.round>3?'Sudden death · ':'')+'Round '+h.round+' · '+teams[match.team].code+' '+h.us+'–'+h.them+' '+teams[match.opp].code+'.');
   if(success)match.highlights++;
-  if(h.round<3||h.us===h.them&&h.round<6){
+  if(h.round<3||h.us===h.them){
    render();clearTimeout(timer);timer=setTimeout(()=>{if(screen==='live'&&!match.settled)startShootout();},700);
-  }else shootoutEnd(h.us===h.them?Math.random()<.5:h.us>h.them);
+  }else shootoutEnd(h.us>h.them);
   return;
  }
  if(isGoalie()){
@@ -882,18 +940,25 @@ function newRace(){
  ]);
 }
 function ensureRaces(){
- if(career.races)return;
+ const ownGoalieClub=career.role==='goalie'?career.team:null;
+ if(career.races){
+  if(career.races.scoredFrom&&ownGoalieClub!==null){
+   // Repair previously migrated saves that credited a teammate with the user's starts.
+   career.races.regular[ownGoalieClub][1].line=stats();
+  }
+  return;
+ }
  career.races={regular:newRace(),playoff:newRace(),scoredFrom:career.gp};
  // Older saves have team totals but no opponent player game logs.
  for(const team of career.table){
   for(let game=0;game<career.gp;game++){
    const share=total=>Math.floor(total/career.gp)+Number(game<total%career.gp);
    const against=share(team.ga);
-   recordClub('regular',team.id,share(team.gf),against,game<team.w,{seed:game});
+   recordClub('regular',team.id,share(team.gf),against,game<team.w,{seed:game,skipGoalie:team.id===ownGoalieClub});
   }
  }
 }
-function recordClub(phase,id,goals,against,won,{seed,player,seconds=3600}){
+function recordClub(phase,id,goals,against,won,{seed,player,seconds=3600,skipGoalie=false}){
  const club=career.races[phase][id];
  const dice=(salt)=>((Math.imul((id+3)*37+(seed+7)*103+salt*7919+career.year*1831,213737))>>>8)%100;
  const skater=club[0].line,goalie=club[1].line,rookie=club[2].line;
@@ -909,7 +974,7 @@ function recordClub(phase,id,goals,against,won,{seed,player,seconds=3600}){
   else if(roll<54)rookie.a++;
  }
  skater.gp++;rookie.gp++;
- if(player&&isGoalie())return;
+ if(skipGoalie||player&&isGoalie())return;
  goalie.gp++;goalie.w+=Number(won);goalie.ga+=against;goalie.so+=Number(against===0);goalie.seconds+=seconds;
  goalie.sv+=Math.max(15,21+dice(98)%17-against);
 }
@@ -1083,17 +1148,27 @@ function revealDraft(){
 }
 const actions={
  mute(){
-  muted=!muted;persist();
+  muted=!muted;saveSound();
   const button=document.querySelector('[data-action="mute"]');
   button.textContent=muted?'Sound off':'Sound on';button.setAttribute('aria-pressed',String(!muted));
   if(!muted) sound('cheer');
  },
- slots(){slot=-1;career=null;show('slots');},
- new({index}){slot=Number(index);show('create');app.querySelector('[name="name"]').focus();},
- resume({index}){slot=Number(index);career=slots[slot];if(career.year>0)ensureRaces();show('hub');},
+ slots(){slot=-1;career=null;refreshSlots();show('slots');},
+ new({index}){
+  refreshSlots();
+  if(slots[index]){show('slots');return;}
+  slot=Number(index);show('create');app.querySelector('[name="name"]')?.focus();
+ },
+ resume({index}){
+  refreshSlots();
+  if(!slots[index]){show('slots');return;}
+  slot=Number(index);career=slots[slot];
+  if(career.year>0)ensureRaces();
+  show('hub');
+ },
  delete({index}){
   if(window.confirm('Delete the career for '+slots[index].name+'? This cannot be undone.')){
-   slots[index]=null;persist();show('slots');
+   writeSlot(Number(index),null);show('slots');
   }
  },
  view({id}){show(id);},
@@ -1159,7 +1234,7 @@ app.addEventListener('submit',event=>{
   input.addEventListener('input',()=>input.setCustomValidity(''),{once:true});
   return;
  }
- career=createCareer(values);persist();show('hub');
+ career=createCareer(values);persist();show(career?'hub':'slots');
 });
 document.addEventListener('keydown',event=>{
  if(event.altKey||event.ctrlKey||event.metaKey||event.repeat)return;
@@ -1173,6 +1248,11 @@ document.addEventListener('keydown',event=>{
  if(index===undefined)return;
  event.preventDefault();
  if(screen==='drill')playDrill(index);else playMoment(index);
+});
+window.addEventListener?.('storage',event=>{
+ if(screen==='slots'&&(event.key===null||event.key===storageKey||event.key?.startsWith(storageKey+'-slot-'))){
+  refreshSlots();render();
+ }
 });
 render();
 </script>
