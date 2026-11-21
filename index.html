@@ -243,6 +243,14 @@ button.quiet{background:#101d2a}.nav{gap:.45rem}.nav button{background:#101c2a}.
 .sim-goal-banner{position:absolute;inset:auto .6rem .6rem;z-index:1;background:linear-gradient(105deg,#ffdf8c,#f3b846);color:#271b0b;border:1px solid #fff0bc;border-radius:4px;box-shadow:0 3px 17px #0008;text-align:center;font-size:clamp(1rem,3vw,1.55rem);font-weight:900;letter-spacing:.085em;text-transform:uppercase;padding:.36rem .6rem;overflow-wrap:anywhere}
 .timed-feed li.feed-scoring{margin:.24rem 0;padding:.38rem .5rem;background:#493614;border:1px solid #eab35880;border-left:3px solid #ffcd6c;border-radius:4px;color:#fff7e6}
 .feed-goal-label{display:block;color:#ffe092;font-size:.86rem;font-weight:900;letter-spacing:.045em;text-transform:uppercase;margin-bottom:.12rem}
+ 
+.quiz-panel{max-width:900px;margin-inline:auto}
+.quiz-levels{grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));align-items:stretch}
+.quiz-level{border-top:3px solid #9adbf4;display:flex;flex-direction:column;gap:.45rem}
+.quiz-level[data-level="starter"]{border-top-color:#b9cde1}.quiz-level[data-level="allstar"]{border-top-color:var(--gold)}
+.quiz-level h3,.quiz-level p{margin:0}.quiz-level p{flex:1}.quiz-level button{align-self:start;margin-top:.35rem}
+.quiz-answers button{text-align:left;white-space:normal;min-height:52px}
+.quiz-result{padding:.85rem 1rem;border-left:3px solid var(--gold);background:#14293d;border-radius:4px}.quiz-result p{margin:.45rem 0 0}
 </style>
 </head>
 <body>
@@ -518,11 +526,11 @@ const trivia = [
  ['What is a team doing when it’s down a skater due to a penalty?','Killing a penalty','Calling a timeout','Starting overtime'],['How many skaters normally play per team at full strength, excluding the goalie?','5','6','4'],
  ['What is a player alone against the goalie on an open rush called?','A breakaway','A faceoff','A line change'],['What is the painted area in front of the goal called?','The crease','The bench','The boards'],
  ['What machine smooths the ice during intermission?','Ice resurfacer','Snow blower','Forklift'],['Which part of a skate touches the ice?','Blade','Laces','Tongue'],
- ['Which layer of a stick contacts the puck?','Blade','Knob','Upper shaft'],['What is it called when a player sets up a teammate’s goal and gets credit?','An assist','A save','A hit'],
- ['What is the first shot taken straight off a pass called?','A one-timer','A wrist roll','A changeup'],['What helps protect a skater’s head?','Helmet','Gloves','Shoulder pads'],
+ ['Which part of a stick touches the puck when you shoot?','Blade','Knob','Upper shaft'],['What is it called when a player sets up a teammate’s goal and gets credit?','An assist','A save','A hit'],
+ ['What is a shot taken straight off a pass called?','A one-timer','A wrist roll','A changeup'],['What helps protect a skater’s head?','Helmet','Gloves','Shoulder pads'],
  ['What does a goalie use to catch a puck?','Trapper','Blocker','Skate'],['What does a goalie wear on the stick hand?','Blocker','Trapper','Elbow pad'],
  ['What does pulling the goalie usually let a team add?','An extra skater','A second puck','A second goal'],['What is a quick change of direction to fool a defender called?','A deke','A draw','A freeze'],
- ['What is the person who steps in for a faceoff when a teammate is waved out?','Another eligible skater','The goalie','The coach'],
+ ['Who can take a faceoff when a teammate is waved out?','Another eligible skater','The goalie','The coach'],
  ['What usually happens when a goalie covers the puck?','The referee stops play','The period ends','The goalie scores'],
  ['What’s the meeting place between the periods for a team?','Locker room','Penalty box','Faceoff dot'],
  ['What mark usually identifies a team captain’s jersey?','C','G','R'],['What letter identifies an alternate captain?','A','E','P'],
@@ -537,6 +545,69 @@ const trivia = [
  ['What is the NHL’s championship trophy called?','Stanley Cup','Grey Cup','Memorial Cup'],
  ['What type of pass lifts the puck just over an opposing stick?','Saucer pass','Board pass','Drop pass']
 ];
+const quizLevels = {
+ rookie:{title:'Rookie',description:'Rink basics, gear, and common hockey terms.',original:[0,4,5,6,7,8,9,10,16,17,18,21,28,29,34,35,36],questions:[
+  ['How many posts stand upright on one hockey net?','Two','One','Three','The two posts are joined across the top by the crossbar.'],
+  ['What do players wear to protect their teeth?','A mouthguard','A kneepad','A visor','A mouthguard fits inside the mouth and cushions the teeth.'],
+  ['What does the netting behind the goal do?','Catches the puck after a goal','Makes the puck slide faster','Marks the centre of the rink'],
+  ['What is a short turn on the ice before a player returns to the bench called?','A shift','An intermission','A timeout'],
+  ['If your team scores four goals and allows two, who wins?','Your team','The other team','It’s a tie'],
+  ['What do players grip when they carry their hockey stick?','The shaft','The skate blade','The netting'],
+  ['What part of a player’s gear shows their number?','Their jersey','Their skate blade','Their mouthguard'],
+  ['What covers a skater’s shins?','Shin pads','Shoulder pads','Hockey pants'],
+  ['What does the scoreboard show during a game?','The teams’ scores','The players’ skate sizes','The ticket prices'],
+  ['What is the break between periods called?','Intermission','Faceoff','Warmup'],
+  ['What’s it called when a player sends the puck to a teammate?','A pass','A save','A penalty'],
+  ['What do players do in warmup before the game?','Skate and practise shots','Hand out the trophies','Change the final score'],
+  ['Which piece of equipment protects a goalie’s legs?','Leg pads','A blocker','A mask'],
+  ['What is a goal called when it evens the score?','A tying goal','A shutout','A game-opening goal']
+ ]},
+ starter:{title:'Starter',description:'Common plays, positions, and what happens on the ice.',original:[1,2,3,11,12,13,14,15,19,20,22,23,24,25,27,30,31,40],questions:[
+  ['Your team gets the puck back near its own net and moves up the ice together. What is that called?','A breakout','A shootout','A faceoff','A breakout gets the puck out of your defensive zone and starts an attack.'],
+  ['A goalie stops a shot, but the puck bounces out in front. What is that loose puck called?','A rebound','An assist','An icing'],
+  ['Which two forward positions usually play to either side of the centre?','Left wing and right wing','Left defence and right defence','Goalie and extra skater'],
+  ['A teammate shoots and you angle your blade so the puck changes direction toward the net. What did you do?','Deflected the puck','Covered the puck','Called a line change'],
+  ['Your teammate backs you up and takes the puck when you leave it behind you. What was the play?','A drop pass','A slap shot','A poke check'],
+  ['What does a player do on a backcheck?','Skates back to help defend','Skates to the bench to change','Stays by the opponent’s net'],
+  ['What does a forechecker try to do?','Pressure the other team near its own net','Guard their team’s crease','Wait at centre for a faceoff'],
+  ['Why might a skater pass the puck off the boards?','To get it around an opponent','To stop the game clock','To move the blue line'],
+  ['Both teams have five skaters on the ice. What is this called?','Even strength','A two-player advantage','A penalty kill'],
+  ['Why does a player try to screen the goalie?','To make the puck harder to see','To get a clear view of their own bench','To protect the goal posts'],
+  ['What’s a line change?','Fresh players replace teammates on the ice','The officials move the blue line','Both teams swap nets during play'],
+  ['What does a poke check use to knock the puck away?','The blade of the stick','A shoulder pad','The blocker'],
+  ['A goalie slides down with the pads spread low across the ice. What is that save position called?','Butterfly','Breakaway','Wraparound']
+ ]},
+ allstar:{title:'All-Star',description:'Game situations, strategy, and a little hockey math.',original:[26,32,33,37,38,39,41],questions:[
+  ['Your team is down one goal with a minute left. The coach pulls the goalie. What risk are you taking?','The other team can shoot at an empty net','Your team must take a penalty','Your team can only have four skaters','The extra skater helps your attack, but no goalie is guarding your net.'],
+  ['Two attackers rush toward one defender. Your teammate is open across the ice and the defender moves toward you. Which play uses the open space?','Pass across to your teammate','Stop and let the defender recover','Shoot straight into the defender’s skates','Moving the puck sideways can get it around the defender and make the goalie move.'],
+  ['You play defence on a two-on-one. The goalie faces the puck carrier. Which lane can you help protect?','The pass to the other attacker','The path to your bench','The lane behind the other team’s net'],
+  ['Your goalie faces 20 shots on goal and lets in 2. How many saves did they make?','18','20','22','Subtract the 2 goals from the 20 shots on goal.'],
+  ['A skater finishes the game with two goals and one assist. How many points did they earn?','Three','Two','One','Each goal and each assist earns one point.'],
+  ['Your team is trying to protect a one-goal lead. Two teammates already chased the puck into the corner. Where can you help most?','In front of your net, covering the open attacker','In the same corner with both teammates','At the far blue line waiting for a pass'],
+  ['Why do players often take short shifts?','Fresh legs help them skate hard','A short shift adds points','Long shifts count as penalties'],
+  ['An opponent shoots while you’re standing right in your goalie’s view. What could make the save harder?','Your goalie can’t see the puck clearly','The shot automatically counts as two','Your goalie has to switch gloves'],
+  ['An opponent has the puck behind your net. Where’s a dangerous pass they could look for?','Into the open space right in front of the net','Back to their own goalie','Along the boards at centre ice'],
+  ['Your teammate is close to the boards with the puck. How can you give them an easy passing option?','Move into open space where they can see you','Stand behind the same defender','Skate away with your stick up'],
+  ['You’re on a power play and the defenders are packed together. What can quick passes from side to side do?','Make defenders move and open a lane','Add a skater to your team','End the penalty early by themselves'],
+  ['An attacker’s skates are already inside the attacking zone before a teammate carries the puck across the blue line. What might the linesperson call?','Offside','Icing','A hand pass'],
+  ['A teammate shoots the puck along the ice toward the far post. Where can you go to look for a rebound?','Toward the far side of the net','Behind your own goal','To centre ice'],
+  ['Your team trails 2–0. Then you score twice and allow one goal. What is the new score?','You trail 3–2','It’s tied 2–2','You lead 3–2'],
+  ['Two goalies each make 18 saves. One faces 20 shots and the other faces 24. Who has the higher save percentage?','The goalie who faced 20 shots','The goalie who faced 24 shots','They are tied','Both made the same number of saves, but the first goalie stopped a larger share of the shots.'],
+  ['Your team takes a shot that hits the post and stays out. Why doesn’t it count as a goal?','The whole puck never crossed the goal line','Only the crossbar can score','A shot has to touch the goalie first'],
+  ['Why might a goalie come out toward a shooter on a breakaway?','To make the visible opening in the net look smaller','To make the net wider','To give the shooter more room below the pads'],
+  ['The puck comes around the boards to you in your own end. What helps you decide where to pass before you get it?','Look over your shoulder for teammates and opponents','Stare only at the puck','Look at the scoreboard before turning'],
+  ['What is a wraparound attempt?','Skating behind the net and trying to tuck the puck in at the post','Passing the puck behind your own bench','Shooting from the centre circle'],
+  ['Your team’s tying goal comes with 30 seconds left. What happens immediately after the goal?','A faceoff at centre ice','The teams begin overtime right away','The goalie throws the puck into the stands'],
+  ['What can happen if both defenders follow the puck carrier to the corner?','An attacker may be left open in front','The puck automatically comes out of play','The goal becomes smaller'],
+  ['A goalie starts a play by passing the puck to a skater. That skater scores without another player touching it. What could the goalie earn?','An assist','A shutout','A hat trick'],
+  ['You have a clear shot and your teammate is headed for the net. Why might you aim low?','The goalie might kick out a rebound for your teammate','Low shots are worth two goals','It stops all defenders from skating'],
+  ['A player scores three goals across three different games, one in each game. Why is it a hat trick only if all three come in one game?','A hat trick counts one player’s goals in a single game','A hat trick counts only overtime goals','A hat trick uses goals from both teams']
+ ]}
+};
+const originalTriviaCount=trivia.length;
+for(const level of Object.values(quizLevels)){
+ level.ids=[...level.original,...level.questions.map(row=>trivia.push(row)-1)];
+}
 const badgeShapes = {
  flake:'M30 8h4v14l11-7 3 5-12 8 12 8-3 5-11-7v14h-4V34l-12 7-3-5 12-8-12-8 3-5 12 7Z',
  bolt:'M35 8 16 32h14l-4 18 22-25H35l5-17Z',
@@ -890,7 +961,7 @@ function createCareer(values){
   attrs:{shoot:0,speed:0,sense:0,reflex:0},owned:gear.filter(g=>g.cost===0).map(g=>g.id),
   equipped:Object.fromEntries(gear.filter(g=>g.cost===0).map(g=>[g.slot,g.id])),
   career:stats(),junior:stats(),cups:0,medals:{},locker:0,posters:[],poster:null,eventOrder:shuffle(events.map((_,i)=>i)),
-  quizOrder:shuffle(trivia.map((_,i)=>i)),quizGame:-1,drillBests:{},games:0,history:[]
+  quizOrder:shuffle(trivia.map((_,i)=>i)),quizBankSize:trivia.length,quizGame:-1,drillBests:{},games:0,history:[]
  };
  resetSeason(c);
  return c;
@@ -1117,7 +1188,7 @@ function eventView(){
  return '<section class="panel"><p class="eyebrow">Be a Pro</p><h2>'+title+'</h2><p>'+body+'</p><div class="row">'+btn('event',a,'gold','data-index="0"',(ae.bucks??0)<-career.bucks)+btn('event',b,'','data-index="1"',(be.bucks??0)<-career.bucks)+'</div></section>';
 }
 function trainingView(){
- return '<section>'+heading('Practice rink','Training','Drills cost 12 energy and award XP. Pass a drill to add an attribute point.')+'<section class="panel"><h3>Practice game highlights</h3><p class="muted">Try the controls with extra time and no effect on your career.</p><div class="row">'+rolePlays[career.role].map(id=>btn('practice-challenge',challengeTypes[id].title,'quiet','data-id="'+id+'"')).join('')+'</div></section><p>Energy <strong class="gold-text">'+career.energy+'%</strong></p><div class="grid">'+drills.filter(d=>isGoalie()?d[0]!=='shot':['shot','skate'].includes(d[0])).map(([id,label,attr,desc])=>'<article class="panel"><h3>'+label+'</h3><p class="muted">'+desc+'</p><p>+'+statName[attr]+(career.drillBests[id]?' · Best '+career.drillBests[id]:'')+'</p>'+btn('drill','Start drill','gold','data-id="'+id+'"',career.energy<12)+'</article>').join('')+'<article class="panel"><h3>Coach’s Quiz</h3><p class="muted">Answer a hockey question for XP and team chemistry. Available once per game day.</p>'+btn('quiz','Take the quiz','','',career.quizGame===career.games)+'</article></div><div class="row" style="margin-top:1rem">'+btn('rest','Rest +30 energy','quiet','',career.energy===100)+'</div></section>';
+ return '<section>'+heading('Practice rink','Training','Drills cost 12 energy and award XP. Pass a drill to add an attribute point.')+'<section class="panel"><h3>Practice game highlights</h3><p class="muted">Try the controls with extra time and no effect on your career.</p><div class="row">'+rolePlays[career.role].map(id=>btn('practice-challenge',challengeTypes[id].title,'quiet','data-id="'+id+'"')).join('')+'</div></section><p>Energy <strong class="gold-text">'+career.energy+'%</strong></p><div class="grid">'+drills.filter(d=>isGoalie()?d[0]!=='shot':['shot','skate'].includes(d[0])).map(([id,label,attr,desc])=>'<article class="panel"><h3>'+label+'</h3><p class="muted">'+desc+'</p><p>+'+statName[attr]+(career.drillBests[id]?' · Best '+career.drillBests[id]:'')+'</p>'+btn('drill','Start drill','gold','data-id="'+id+'"',career.energy<12)+'</article>').join('')+'<article class="panel"><h3>Coach’s Quiz</h3><p class="muted">Choose your difficulty and answer one question each game day for a chance to earn XP and team chemistry.</p>'+btn('quiz',career.quizGame===career.games?'Quiz complete':'Take the quiz','','',career.quizGame===career.games)+'</article></div><div class="row" style="margin-top:1rem">'+btn('rest','Rest +30 energy','quiet','',career.energy===100)+'</div></section>';
 }
 function shopView(){
  const categories=isGoalie()?['pads','glove','mask','skates']:['stick','skates','visor','helmet','celebration'];
@@ -1147,12 +1218,24 @@ function contractView(){
  return '<section>'+heading('Offseason','Contract desk',teamName(career.team))+'<div class="grid"><article class="panel"><h3>Hometown discount</h3><p>160 Puck Bucks per game · +15 chemistry.</p>'+btn('hometown','Stay with the club','gold')+'</article><article class="panel"><h3>The big bag</h3><p>260 Puck Bucks per game · −7 chemistry.</p>'+btn('bigbag','Sign the big deal','gold')+'</article><article class="panel"><h3>Free agency</h3><p>Try a new club for 220 Puck Bucks per game.</p>'+btn('free','Review offers')+'</article></div></section>';
 }
 function quizView(){
- const [question,answer]=trivia[quiz.id];
- return '<section class="panel arena stack">'+heading('Coach’s Quiz',question)+(quiz.done?'<p class="'+(quiz.correct?'good':'muted')+'" role="status">'+(quiz.correct?'Correct! +45 XP and +4 chemistry.':'Correct answer · '+answer)+'</p>'+btn('view','Back to training','gold','data-id="training"'):'<div class="grid">'+quiz.answers.map((value,i)=>btn('answer',value,'','data-index="'+i+'"')).join('')+'</div>')+'</section>';
+ if(!quiz){
+  return '<section class="panel arena stack quiz-panel"><div><p class="eyebrow">Training</p><h2 id="quiz-heading" tabindex="-1">Coach’s Quiz</h2><p class="muted">Choose a difficulty. A correct answer earns +45 XP and +4 team chemistry.</p></div>'+
+   '<div class="grid quiz-levels">'+Object.entries(quizLevels).map(([id,level])=>
+    '<article class="panel quiz-level" data-level="'+id+'"><h3>'+level.title+'</h3><p class="muted">'+level.description+'</p>'+
+    btn('quiz-level','Play '+level.title,'quiet','data-id="'+id+'"')+'</article>').join('')+'</div>'+
+   btn('view','Back to training','quiet','data-id="training"')+'</section>';
+ }
+ const [question,answer,,,explanation]=trivia[quiz.id];
+ const details=quiz.done?'<div class="quiz-result" id="quiz-result" tabindex="-1"><strong class="'+(quiz.correct?'good':'gold-text')+'">'+
+  (quiz.correct?'Correct! +45 XP and +4 team chemistry.':'Correct answer · '+escapeHTML(answer))+'</strong>'+(explanation?'<p>'+escapeHTML(explanation)+'</p>':'')+'</div>'+
+  btn('view','Back to training','gold','data-id="training"'):
+  '<div class="grid quiz-answers">'+quiz.answers.map((value,i)=>btn('answer',escapeHTML(value),'','data-index="'+i+'"')).join('')+'</div>'+
+  btn('quiz','Change difficulty','quiet');
+ return '<section class="panel arena stack quiz-panel"><div><p class="eyebrow">Coach’s Quiz · '+quizLevels[quiz.level].title+'</p><h2 id="quiz-heading" tabindex="-1">'+escapeHTML(question)+'</h2></div>'+details+'</section>';
 }
 function render(){
  if(!career&&screen!=='create')screen='slots';
- const locked=screen==='live'||screen==='drill'||screen==='quiz'&&!quiz?.done;
+ const locked=screen==='live'||screen==='drill'||screen==='quiz'&&quiz&&!quiz.done;
  document.querySelector('#tools').innerHTML=btn('mute',muted?'Sound off':'Sound on','quiet','aria-pressed="'+!muted+'"')+(career&&!locked?btn('slots','Careers','quiet'):'');
  let body='';
  if(screen==='slots')body=slotsView();
@@ -2389,18 +2472,43 @@ function buyGear(id){
  if(!owns){career.owned.push(id);career.bucks-=g.cost;}
  career.equipped[g.slot]=id;persist();feedback(g.name+' equipped.');
 }
-function startQuiz(){
+function openQuiz(){
  if(career.quizGame===career.games)return;
- if(!career.quizOrder.length)career.quizOrder=shuffle(trivia.map((_,i)=>i));
- const id=career.quizOrder.shift();
- quiz={id,answers:shuffle(trivia[id].slice(1)),done:false};
+ quiz=null;
  show('quiz');
+ app.querySelector('#quiz-heading')?.focus();
+}
+function startQuiz(level='rookie'){
+ if(career.quizGame===career.games||!Object.hasOwn(quizLevels,level))return;
+ const ids=quizLevels[level].ids;
+ const bankSize=career.quizBankSize??originalTriviaCount;
+ if(bankSize<trivia.length){
+  const added=Array.from({length:trivia.length-bankSize},(_,i)=>bankSize+i);
+  career.quizOrder=shuffle([...new Set([...(career.quizOrder??[]),...added])]);
+  career.quizBankSize=trivia.length;
+ }
+ career.quizOrder??=[];
+ let id=career.quizOrder.find(candidate=>ids.includes(candidate));
+ if(id===undefined){
+  const previous=career.quizLastByLevel?.[level];
+  const fresh=shuffle(ids.filter(candidate=>candidate!==previous));
+  if(ids.includes(previous))fresh.push(previous);
+  career.quizOrder.push(...fresh);
+  id=fresh[0];
+ }
+ quiz={id,level,answers:shuffle(trivia[id].slice(1,4)),done:false};
+ show('quiz');
+ app.querySelector('#quiz-heading')?.focus();
 }
 function saveAnswer(i){
- if(quiz.done)return;
+ if(!quiz||quiz.done||career.quizGame===career.games||!Object.hasOwn(quiz.answers,i))return;
  quiz.done=true;career.quizGame=career.games;quiz.correct=quiz.answers[i]===trivia[quiz.id][1];
+ career.quizOrder=career.quizOrder.filter(id=>id!==quiz.id);
+ career.quizLastByLevel??={};
+ career.quizLastByLevel[quiz.level]=quiz.id;
  if(quiz.correct){applyEffects({xp:45,chem:4});sound('cheer');}
  unlockRanks();persist();render();
+ app.querySelector('#quiz-result')?.focus();
 }
 function revealDraft(){
  if(career.draftTeam!==undefined)return;
@@ -2457,7 +2565,8 @@ const actions={
  drill({id}){if(career.energy>=12)startDrill(id);},
  'drill-key'({index}){playDrill(Number(index));},
  'quit-drill'(){finishDrill();},
- quiz(){startQuiz();},
+ quiz(){openQuiz();},
+ 'quiz-level'({id}){startQuiz(id);},
  answer({index}){saveAnswer(Number(index));},
  'locker-up'(){
   const cost=lockerCosts[career.locker];if(cost===undefined||career.bucks<cost)return;
