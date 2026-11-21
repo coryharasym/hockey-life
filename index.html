@@ -1,0 +1,933 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#091524">
+<title>Pro Hockey: Career Mode</title>
+<style>
+:root{color-scheme:dark;--navy:#091524;--panel:#122339;--edge:#36506b;--ice:#f0f7ff;--muted:#aebfd1;--gold:#f4ca69;--blue:#83d8ff;--green:#78e0b6;--red:#ffafac}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 78% 0,#253f57 0,transparent 55%),linear-gradient(125deg,#060e1a,#0b1b2d 65%,#06101b);color:var(--ice);font:16px/1.5 system-ui,sans-serif}
+button,input,select{font:inherit}button{cursor:pointer;touch-action:manipulation;color:var(--ice);border:1px solid #48627d;background:linear-gradient(#253d55,#142539);padding:.65rem 1rem;min-height:44px;border-radius:5px;font-weight:750}button:hover{filter:brightness(1.18)}button:disabled{opacity:.48;cursor:default;filter:none}:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+button.gold{color:#1a1620;background:linear-gradient(110deg,#f9e6a5,#e9ad3f);border-color:#ffe3a4;box-shadow:0 2px 16px #ffc65925}button.quiet{background:#0b1829}button.danger{color:var(--red)}
+header{border-bottom:1px solid #627d96;background:linear-gradient(105deg,#121d2d,#28445c 56%,#0d1724);box-shadow:0 6px 26px #0005}.top{max-width:1190px;margin:auto;padding:.8rem clamp(.8rem,3vw,2rem);display:flex;justify-content:space-between;align-items:center;gap:.75rem}.brand{font-size:clamp(1rem,3vw,1.58rem);font-weight:950;font-style:italic;letter-spacing:.08em;line-height:1.1;text-transform:uppercase}.brand small{display:block;font:800 .73rem/1.6 system-ui;color:var(--gold);letter-spacing:.2em}main{max-width:1190px;margin:auto;padding:clamp(.8rem,3vw,2rem);min-height:72vh}
+h1,h2,h3,p{margin:0}h1,h2,h3{line-height:1.12}h1{font-size:clamp(2rem,6vw,4.4rem);letter-spacing:-.055em;text-transform:uppercase;font-weight:950;font-style:italic}h2{font-size:clamp(1.4rem,3.8vw,2.2rem);letter-spacing:-.03em}h3{font-size:1.12rem}p{margin:.55rem 0}.muted{color:var(--muted)}.eyebrow{color:var(--blue);font-size:.78rem;font-weight:850;letter-spacing:.16em;text-transform:uppercase;margin:0 0 .4rem}.gold-text{color:var(--gold)}.good{color:var(--green)}.bad{color:var(--red)}.section-head{margin-bottom:1rem}.stack{display:grid;gap:1rem}.row{display:flex;flex-wrap:wrap;gap:.65rem;align-items:center}.spread{justify-content:space-between}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,225px),1fr));gap:.8rem}.panel{background:linear-gradient(135deg,#1c3147ed,#0e1b2cec);border:1px solid var(--edge);border-top-color:#66819a;box-shadow:0 12px 32px #0004,inset 0 1px #ffffff10;border-radius:8px;padding:clamp(.8rem,2vw,1.25rem);position:relative}.panel h3+ p{margin-top:.45rem}
+.hero{position:relative;min-height:340px;display:grid;align-items:end;overflow:hidden;background:linear-gradient(105deg,#081524 13%,#11283d 47%,#162f48);border-left:4px solid var(--gold);padding:clamp(1.2rem,4vw,3rem)}.hero canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:right 32%}.hero:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#071321 5%,#081523f0 27%,#0918274d 66%,transparent),linear-gradient(0deg,#0a1525e0,transparent 56%);pointer-events:none}.hero .copy{z-index:1;position:relative;max-width:29rem}.hero .copy p{max-width:24rem}.slots{margin-top:.95rem}.slot{min-height:135px}.slot .row{margin-top:.8rem}.crest{width:48px;height:48px;vertical-align:middle}.crest.large{width:80px;height:80px}
+.nav{display:flex;gap:.4rem;overflow:auto;margin-bottom:1rem;padding:2px 2px 5px}.nav button{white-space:nowrap;flex:1}.nav [aria-current]{border-color:var(--gold);color:var(--gold)}.dashboard{display:grid;grid-template-columns:minmax(240px,370px) 1fr;gap:1rem}.card{--tier:#dfa571;position:relative;overflow:hidden;min-height:405px;border:2px solid var(--tier);border-radius:12px;background:#091827;box-shadow:0 10px 40px #0006,inset 0 0 30px var(--tier)}.card canvas.portrait{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.card:after{position:absolute;inset:30% 0 0;content:"";pointer-events:none;background:linear-gradient(transparent,#06101be0 80%,#060f19)}.card-top,.card-bottom{position:absolute;z-index:1;left:1rem;right:1rem}.card-top{top:.85rem}.card-bottom{bottom:1rem}.card-bottom h2{font-style:italic;text-transform:uppercase;overflow-wrap:anywhere}.rating{color:var(--tier);font-size:3.3rem;font-weight:950;line-height:.85;text-align:right;text-shadow:2px 2px 8px #07111b}.rating small{display:block;font:900 .72rem system-ui;letter-spacing:.18em}.rank{color:var(--tier);font-weight:850;text-transform:uppercase;letter-spacing:.14em}.card[data-tier="3"]{box-shadow:0 0 20px #a6a8ff40,inset 0 0 24px #e9a8ff}.card[data-tier="4"]{animation:legend 2.6s ease-in-out infinite alternate}@keyframes legend{to{box-shadow:0 0 28px #f2be6588,inset 0 0 34px #ffcb75}}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin-top:.8rem}.stat{background:#081625a0;border:1px solid #344e67;border-top:2px solid #78a1bb;border-radius:5px;padding:.45rem;text-align:center}.stat strong{display:block;font-size:clamp(1.2rem,3vw,1.9rem);font-variant-numeric:tabular-nums}.stat small{color:var(--muted);font-size:.77rem}.track{height:.45rem;background:#06101c;border-radius:9px;overflow:hidden;margin:.35rem 0}.track i{display:block;height:100%;background:linear-gradient(90deg,#4986bf,#93e7ff);border-radius:9px}.track.energy i{background:linear-gradient(90deg,#50a688,#a9f1c9)}
+label.field{display:grid;gap:.35rem;font-weight:780}input,select{width:100%;border:1px solid #637e97;border-radius:5px;background:#091829;color:white;padding:.55rem .7rem;min-height:44px}fieldset{border:0;padding:0;margin:0;min-width:0}legend{font-weight:850;margin-bottom:.55rem}.pick{display:flex;align-items:center;gap:.6rem;border:1px solid #45617b;border-radius:6px;padding:.55rem;cursor:pointer;background:#091929}.pick:has(input:checked){border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold);background:#263344}.pick input{appearance:auto;accent-color:var(--gold);width:16px;min-height:0;height:16px;flex-shrink:0}.teams{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,172px),1fr));gap:.45rem}.teams .crest{width:34px;height:34px}.scoreboard{display:grid;grid-template-columns:1fr auto 1fr;gap:.75rem;align-items:center;text-align:center}.score{font-size:clamp(1.6rem,7vw,4.6rem);white-space:nowrap;font-weight:950;font-variant-numeric:tabular-nums;line-height:1.15}.feed{margin:0;padding:0;list-style:none;max-height:255px;overflow:auto}.feed li{padding:.5rem 0;border-bottom:1px solid #33516b}.feed b{display:inline-block;color:var(--blue);min-width:3.25rem}.arena{max-width:680px;margin:auto}.rink{position:relative;isolation:isolate;min-height:205px;border:4px solid #dae6ed;border-radius:52px;background:repeating-linear-gradient(17deg,#dff6ff66 0 1px,transparent 1px 24px),linear-gradient(150deg,#93c9e2,#e2f6ff);color:#081f36;overflow:hidden;display:grid;align-content:center;padding:.8rem}.rink:before{content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(0deg,transparent 48%,#b8416566 48% 51%,transparent 51%),radial-gradient(circle,#a8d5eb 0 13%,#3976aa88 13% 14%,transparent 14%)}.goalmouth{display:grid;grid-template-columns:repeat(3,1fr);gap:.35rem;border:5px solid #b32e4b;border-bottom:0;border-radius:20px 20px 0 0;background:repeating-linear-gradient(45deg,#fff9 0 1px,transparent 1px 7px),#456e8f;max-width:462px;width:100%;margin:auto;padding:.7rem}.goalmouth button{min-height:60px}.goalmouth .target{background:#f5cb64;color:#182336;border-color:#603e03;box-shadow:0 0 12px #dad334}.meter{height:1.75rem;position:relative;background:#10283d;border:1px solid #8aa8bc;border-radius:4px;overflow:hidden}.meter-zone,.meter-cursor{position:absolute;top:0;bottom:0}.meter-zone{background:#64d8ac}.meter-cursor{width:5px;background:white;box-shadow:0 0 5px #061326}.trophy{font-size:2.2rem}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse}td,th{padding:.45rem;text-align:left;border-bottom:1px solid #37516b}th{color:var(--blue)}tr.mine{color:var(--gold);font-weight:850}.notice{min-height:1.4rem;color:var(--gold)}.goal-celebration{color:var(--gold);font-weight:900;text-align:center}.goal-celebration span{display:inline-block;font-size:1.6em;animation:fist .7s ease-out both}.goal-celebration.arrow span{animation:arrow .7s ease-out both}.goal-celebration.slide span{animation:slide .75s ease-out both}.goal-celebration.shuffle span{animation:shuffle .65s ease-in-out both}@keyframes fist{from{transform:translateY(11px) scale(.5);opacity:0}to{transform:translateY(0) scale(1)}}@keyframes arrow{from{transform:translate(-34px,10px) rotate(-35deg);opacity:.1}to{transform:translate(0,0)}}@keyframes slide{from{transform:translateX(-38px) skewX(-20deg);opacity:.1}to{transform:none}}@keyframes shuffle{0%,60%{transform:translateX(-8px) rotate(-24deg)}30%,90%{transform:translateX(8px) rotate(24deg)}}.card[data-tier="3"]:before{content:"";position:absolute;z-index:1;inset:0;pointer-events:none;background:linear-gradient(125deg,transparent 15%,#ab8aff32 34%,#8fe7ff30 42%,#ffb3c332 48%,transparent 62%);mix-blend-mode:screen}footer{color:var(--muted);text-align:center;padding:1rem;font-size:.85rem}
+@media(max-width:700px){.dashboard{grid-template-columns:1fr}.card{min-height:355px;max-width:390px;width:100%;justify-self:center}.hero{min-height:305px}.hero canvas{object-position:70% center}.scoreboard .crest.large{width:54px;height:54px}.stats{gap:.28rem}.stat{padding:.3rem}.nav button{padding:.45rem .7rem}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header><div class="top"><div class="brand">Pro Hockey<small>Career Mode</small></div><div class="row" id="tools"></div></div></header>
+<main id="app"></main><footer id="footer"></footer>
+<script>
+'use strict';
+const teams = [
+ ['CGY','Calgary','Blizzard','#319acb','#d9f4ff','flake','Rowan Frost'],
+ ['TOR','Toronto','Thunder','#3855de','#f9d36f','bolt','Finn Mercer'],
+ ['VAN','Vancouver','Tide','#0f8f85','#9df7d8','wave','Parker Reid'],
+ ['EDM','Edmonton','Embers','#cb5928','#ffca76','flame','Riley Cole'],
+ ['WPG','Winnipeg','Wolves','#5d7097','#d7ebff','wolf','Logan Hart'],
+ ['MTL','Montréal','Royals','#9d263e','#f5d26d','crown','Nico Marchand'],
+ ['OTT','Ottawa','Sentinels','#713994','#f3bffb','tower','Evan Roy'],
+ ['HFX','Halifax','Breakers','#126591','#a9ecff','anchor','Jude MacNeil'],
+ ['QC','Québec','Aurora','#523bbb','#9fffd9','aurora','Jules Beaulieu'],
+ ['VIC','Victoria','Orcas','#225d86','#e6f6ff','whale','Cameron Vale'],
+ ['REG','Regina','Bison','#497540','#ebdba5','bison','Sam Brooks'],
+ ['SAS','Saskatoon','Comets','#923181','#ffbddd','comet','Mika Lane'],
+ ['KW','Kitchener','Forge','#944839','#ffd894','anvil','Jasper King'],
+ ['HAM','Hamilton','Steel','#39586b','#c7e6ff','beam','Dylan Park'],
+ ['STJ','St. John’s','Icebergs','#1b6d83','#e4fbff','berg','Casey Doyle'],
+ ['KEL','Kelowna','Summits','#6753a0','#f2deaf','mountain','Avery Nash']
+].map(([code,city,mascot,color,accent,mark,star],id)=>({id,code,city,mascot,color,accent,mark,star}));
+const positions = {
+ goalie:['Goalie','G','Read the shooter and take away the net.'],
+ sniper:['Sniper','RW','Pick a corner and finish the breakaway.'],
+ playmaker:['Playmaker','C','Find the open teammate and set up goals.'],
+ power:['Power Forward','LW','Win board battles and drive hard to the net.']
+};
+const ranks = [['Prospect',65,'#e6ad7d'],['Rookie',75,'#d7e8f7'],['Starter',82,'#f5cb66'],['All-Star',88,'#cbb9ff'],['Legend',95,'#ffcf67']];
+const awards = {cup:['Northstar Cup','🏆'],rocket:['Golden Shot','🎯'],points:['Scoring Crown','👑'],mvp:['League MVP','⭐'],rookie:['Rookie of the Year','🌟'],playoff:['Playoff MVP','🏅'],goalie:['Vezina Trophy','🧤']};
+const gear = [
+ ['wood','Wood Stick','stick',0,'shoot',0],['neon','Neon Composite','stick',500,'shoot',2],['chrome','Gold Chrome','stick',5000,'shoot',5],
+ ['stock','Stock Skates','skates',0,'speed',0],['flash','Flash Blades','skates',650,'speed',2],['jet','Jet Steel','skates',2100,'speed',4],
+ ['clear','Clear Visor','visor',0,'sense',0],['ice','Ice Tint','visor',350,'sense',1],['goldvisor','Gold Tint','visor',1300,'sense',2],
+ ['classic','Practice Helmet','helmet',0,'sense',0],['navy','Midnight Helmet','helmet',450,'sense',1],['silver','Silver Helmet','helmet',950,'sense',2],
+ ['fist','Fist Pump','celebration',0,'',0],['arrow','The Arrow','celebration',450,'',0],['slide','Ice Slide','celebration',850,'',0],['shuffle','The Shuffle','celebration',1200,'',0],
+ ['basepads','Rookie Pads','pads',0,'speed',0],['stormpads','Storm Pads','pads',500,'speed',2],['propads','Gold Pro Pads','pads',5000,'speed',5],
+ ['baseglove','Practice Glove','glove',0,'reflex',0],['trap','Lightning Trapper','glove',650,'reflex',2],['vacuum','Vacuum Trapper','glove',2200,'reflex',4],
+ ['basemask','Team Mask','mask',0,'sense',0],['flamemask','Flames Mask','mask',350,'sense',1],['boltmask','Lightning Mask','mask',550,'sense',2],['sharkmask','Shark Teeth Mask','mask',850,'sense',2],['crownmask','Crown Mask','mask',1600,'sense',3]
+].map(([id,name,slot,cost,attr,boost])=>({id,name,slot,cost,attr,boost}));
+const drills = [
+ ['shot','Sniper Drill','shoot','Hit glowing targets for 15 seconds.'],
+ ['skate','Agility Course','speed','Follow the arrows to weave through eight gates.'],
+ ['reflex','Reflex','reflex','Read the puck and make six reaction saves.'],
+ ['glove','Glove Gauntlet','reflex','Catch six quick shots aimed at the high corners.'],
+ ['blocker','Blocker Bash','reflex','Knock away low shots with your blocker.'],
+ ['post','Post-to-Post','speed','Push across the crease and seal each post.'],
+ ['angle','Angle Master','sense','Center yourself on the puck at the right instant.']
+];
+const events = [
+ ['Extra ice','Coach offers an extra shooting or save session.','Stay late · +1 specialty, −15 energy',{special:1,energy:-15},'Head home · +18 energy',{energy:18}],
+ ['Rivalry mic','A reporter asks for a bold prediction before the rivalry game.','Call the win · +2 hype',{hype:2},'Credit the team · +6 chemistry',{chem:6}],
+ ['Morning skate','Your line wants to hit the ice early.','Join in · +1 speed, −12 energy',{speed:1,energy:-12},'Sleep in · +16 energy',{energy:16}],
+ ['Team dinner','Your teammates invite you out.','Go with the team · +8 chemistry',{chem:8},'Take it easy · +15 energy',{energy:15}],
+ ['Open practice','A youth team asks to watch your practice.','Run a drill · +45 XP, −8 energy',{xp:45,energy:-8},'Sign a puck · +3 chemistry',{chem:3}],
+ ['Stick rack','The equipment crew asks for feedback.','Test new gear · +1 hockey IQ',{sense:1},'Help pack up · +5 chemistry',{chem:5}],
+ ['Film room','Coach found a few ways to beat the next opponent.','Study film · +1 hockey IQ, −8 energy',{sense:1,energy:-8},'Rest up · +14 energy',{energy:14}],
+ ['Sponsor shoot','A local shop needs a player for a photo.','Pose for photos · +120 Puck Bucks',{bucks:120},'Hit the ice · +35 XP',{xp:35}],
+ ['Warmup playlist','The captain hands you the aux cord.','Play a pump-up song · +1 hype',{hype:1},'Let a rookie pick · +6 chemistry',{chem:6}],
+ ['Road trip','The team bus settles in for a long ride.','Nap · +18 energy',{energy:18},'Sit with a rookie · +6 chemistry',{chem:6}],
+ ['Community rink','Fans need help getting the outdoor rink ready.','Lend a hand · +50 XP, −8 energy',{xp:50,energy:-8},'Donate supplies · −50 Puck Bucks, +5 chemistry',{bucks:-50,chem:5}],
+ ['Practice challenge','The captain challenges you to one more rep.','Go again · +1 specialty, −10 energy',{special:1,energy:-10},'Cheer them on · +5 chemistry',{chem:5}],
+ ['Mic’d up','The broadcast crew offers you the warmup microphone.','Wear it · +2 hype',{hype:2},'Pass it to a teammate · +5 chemistry',{chem:5}],
+ ['Rink opening','A local team invites you to drop the first puck.','Drop the puck · +40 XP',{xp:40},'Send a jersey · +4 chemistry',{chem:4}],
+ ['New linemates','Coach is mixing up the combinations.','Work on plays · +7 chemistry, −8 energy',{chem:7,energy:-8},'Watch their shifts · +1 hockey IQ',{sense:1}],
+ ['Quiet afternoon','There’s an unexpected break in the schedule.','Rest · +20 energy',{energy:20},'Work on edges · +1 speed, −10 energy',{speed:1,energy:-10}],
+ ['Fan mail','A young fan sends a drawing of your trading card.','Write back · +40 XP',{xp:40},'Hang it in the room · +5 chemistry',{chem:5}]
+];
+const trivia = [
+ ['How many periods are in a standard hockey game?','3','2','4'],['How many minutes are in a regulation pro period?','20','15','25'],
+ ['What is a game with zero goals allowed called?','A shutout','A sweep','A hat trick'],['How many goals make a hat trick?','3','2','4'],
+ ['What is the rubber disk called?','Puck','Stone','Ring'],['Who mainly guards the net?','Goalie','Center','Coach'],
+ ['What starts play at center ice?','A faceoff','A slap shot','A line change'],['What does a referee drop at a faceoff?','A puck','A whistle','A glove'],
+ ['What line is at center ice?','Red line','Blue line','Goal line'],['What colour are the two lines that mark the attacking zones?','Blue','Red','Yellow'],
+ ['Where does a penalized skater usually go?','Penalty box','Center circle','Goal crease'],['What is the advantage when the opponent has fewer skaters because of a penalty?','Power play','Icing','Breakaway'],
+ ['What is a team doing when it’s down a skater due to a penalty?','Killing a penalty','Calling a timeout','Starting overtime'],['How many skaters normally play per team at full strength, excluding the goalie?','5','6','4'],
+ ['What is a player alone against the goalie on an open rush called?','A breakaway','A faceoff','A line change'],['What is the painted area in front of the goal called?','The crease','The bench','The boards'],
+ ['What machine smooths the ice during intermission?','Ice resurfacer','Snow blower','Forklift'],['Which part of a skate touches the ice?','Blade','Laces','Tongue'],
+ ['Which layer of a stick contacts the puck?','Blade','Knob','Upper shaft'],['What is it called when a player sets up a teammate’s goal and gets credit?','An assist','A save','A hit'],
+ ['What is the first shot taken straight off a pass called?','A one-timer','A wrist roll','A changeup'],['What helps protect a skater’s head?','Helmet','Gloves','Shoulder pads'],
+ ['What does a goalie use to catch a puck?','Trapper','Blocker','Skate'],['What does a goalie wear on the stick hand?','Blocker','Trapper','Elbow pad'],
+ ['What does pulling the goalie usually let a team add?','An extra skater','A second puck','A second goal'],['What is a quick change of direction to fool a defender called?','A deke','A draw','A freeze'],
+ ['What is the person who steps in for a faceoff when a teammate is waved out?','Another eligible skater','The goalie','The coach'],
+ ['What usually happens when a goalie covers the puck?','The referee stops play','The period ends','The goalie scores'],
+ ['What’s the meeting place between the periods for a team?','Locker room','Penalty box','Faceoff dot'],
+ ['What mark usually identifies a team captain’s jersey?','C','G','R'],['What letter identifies an alternate captain?','A','E','P'],
+ ['What does an empty-net goal mean?','The opposing goalie was off the ice','The shooter was alone on the bench','The puck bounced over the glass'],
+ ['What does a goalie’s save percentage measure?','Share of shots on goal stopped','Share of games won','Share of passes completed'],
+ ['In hockey stats, what does GAA mean?','Goals against average','Goals and assists added','Game attendance average'],
+ ['Where do skaters sit between shifts?','Team bench','Goal crease','Faceoff circle'],['What is the wall around the rink called?','The boards','The posts','The glass ceiling'],
+ ['What part of the net is the crossbar?','The horizontal bar at the top','The left post','The mesh behind the net'],
+ ['What must cross the goal line for a legal goal?','The entire puck','Just the front of the puck','The shooter’s skate'],
+ ['How many primary and secondary assists combined can normally be credited on one goal?','Up to 2','Up to 3','Exactly 1'],
+ ['Which trophy is named for a goalie and recognizes NHL goaltending?','Vezina Trophy','Art Ross Trophy','Calder Trophy'],
+ ['What is the NHL’s championship trophy called?','Stanley Cup','Grey Cup','Memorial Cup'],
+ ['What type of pass lifts the puck just over an opposing stick?','Saucer pass','Board pass','Drop pass']
+];
+const badgeShapes = {
+ flake:'M30 8h4v14l11-7 3 5-12 8 12 8-3 5-11-7v14h-4V34l-12 7-3-5 12-8-12-8 3-5 12 7Z',
+ bolt:'M35 8 16 32h14l-4 18 22-25H35l5-17Z',
+ wave:'M10 39c8 1 7-20 23-22 9-1 15 3 19 11-10-4-17-1-17 4 0 4 6 6 16 2-5 10-17 12-25 8-4-2-8-3-16 1Z',
+ flame:'M32 8c4 12-5 13 1 23 2-2 5-5 4-10 20 17 9 28-5 28-15 0-19-12-10-22 0 6 3 8 4 8-2-10 1-18 6-27Z',
+ wolf:'M13 10l15 10h8l15-10-4 22-15 17-15-17Zm9 18 7 6-1-5Zm20 0-6 1-1 5Z',
+ crown:'M13 17l11 10 8-15 8 15 11-10-6 26H19Zm7 20v3h24v-3Z',
+ tower:'M20 12h6v8h4v-8h4v8h4v-8h6v16l-5 4 3 12H22l3-12-5-4Zm10 19v8h4v-8Z',
+ anchor:'M32 11a7 7 0 0 1 3 13v14c4-1 7-4 8-6h-4l7-7 6 7h-4c-3 10-11 15-16 17-5-2-13-7-16-17h-4l6-7 7 7h-4c1 2 4 5 8 6V24a7 7 0 0 1 3-13Zm0 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z',
+ aurora:'M12 41C23 10 38 32 51 11 47 35 27 19 12 41Zm6 4C29 24 40 39 51 22 46 43 32 30 18 45Z',
+ whale:'M11 35q8 1 14-7L34 15l1 10q13-5 20 6-5 13-20 12-11 0-17-6l-7 3Zm28-3a2 2 0 1 0 1 4 2 2 0 0 0-1-4Z',
+ bison:'M10 17q9 7 16 4l6-5 6 5q7 3 16-4-2 13-13 14l-1 10-8 6-8-6-1-10Q12 30 10 17Zm17 14v3h3v-3Zm7 0v3h3v-3Z',
+ comet:'M43 12a11 11 0 1 1-1 22L11 46l17-15-12 3 20-12q-2-8 7-10Z',
+ anvil:'M11 18h42l-8 9-9 5 3 7h8v5H18v-5h7l3-7-11-3Z',
+ beam:'M15 14h34v7H36v15h13v8H15v-8h13V21H15Z',
+ berg:'M10 35h44v4H10Zm5-4 8-12 6 4 9-12 11 20Zm1 12h32l-16 8Z',
+ mountain:'M9 43 25 22l6 6L40 12l15 31H9Zm25-12 6-4 6 4-6-11Z'
+};
+function paintBadge(canvas,team){
+ const ctx=canvas.getContext('2d');
+ ctx.clearRect(0,0,64,64);
+ const shell=new Path2D('M32 2 57 10v23c0 12-12 21-25 29C19 54 7 45 7 33V10Z');
+ const fill=ctx.createLinearGradient(0,0,60,64);
+ fill.addColorStop(0,team.color);fill.addColorStop(1,'#071528');
+ ctx.fillStyle=fill;ctx.fill(shell);ctx.strokeStyle=team.accent;ctx.lineWidth=2;ctx.stroke(shell);
+ ctx.fillStyle=team.accent;ctx.fill(new Path2D(badgeShapes[team.mark]),'evenodd');
+ ctx.font='800 8px system-ui';ctx.textAlign='center';ctx.fillText(team.code,32,54);
+}
+function path(ctx,d,fill,stroke,width=2){
+ const shape=new Path2D(d);
+ if(fill){ctx.fillStyle=fill;ctx.fill(shape);}
+ if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=width;ctx.stroke(shape);}
+}
+function paintPortrait(canvas,team,number,goalie,gearIds={}){
+ const wide=canvas.classList.contains('hero-art');
+ canvas.width=wide?1080:480;canvas.height=480;
+ const c=canvas.getContext('2d'),w=canvas.width;
+ const sky=c.createLinearGradient(0,0,w,480);sky.addColorStop(0,'#081324');sky.addColorStop(.57,'#263e56');sky.addColorStop(1,'#063149');c.fillStyle=sky;c.fillRect(0,0,w,480);
+ for(let i=0;i<9;i++){
+  const x=w*(.42+i*.066),y=30+(i%4)*9;
+  const light=c.createRadialGradient(x,y,2,x,y,55);light.addColorStop(0,'#f6fcff');light.addColorStop(.2,'#aac8ee55');light.addColorStop(1,'#aac8ee00');c.fillStyle=light;c.fillRect(x-55,y-55,110,110);
+ }
+ path(c,'M0 353 1080 275v205H0Z','#13293c');
+ for(let i=0;i<23;i++){
+  const y=317+i*7,x=(i*89)%w;
+  c.globalAlpha=.14;path(c,'M'+x+' '+y+'l'+(w*.47)+' -35',null,'#98daff',2);
+ }
+ c.globalAlpha=1;c.save();c.translate(wide?510:0,wide?-12:20);c.scale(wide?1.1:1,wide?1.1:1);
+ const jersey=c.createLinearGradient(100,165,420,390);jersey.addColorStop(0,team.accent);jersey.addColorStop(.19,team.color);jersey.addColorStop(.74,'#142b40');jersey.addColorStop(1,'#071724');
+ path(c,'M217 152 275 151 311 180 355 199 386 245 433 358 396 385 331 300 343 390 164 428 156 340 118 395 74 376 105 280 139 222 194 184Z',jersey,'#050e19',7);
+ path(c,'M113 269 144 283 134 306 103 292Zm239-28 34 24 10 25-36-18Zm-187 111 170-30 4 27-173 33Z',team.accent);
+ path(c,'M105 307 130 321 124 337 98 326Zm260-26 35 20 8 17-35-18Z',team.color);
+ path(c,'M214 153 233 183h39l27-24-11 32-31 17-35-13Z','#cde8fb');
+ const head=c.createLinearGradient(218,90,308,164);head.addColorStop(0,'#eac0a1');head.addColorStop(1,'#755065');
+ path(c,'M219 91q26-19 73 3l7 34-6 31-18 19-27-6-27-28Z',head,'#142535',4);
+ const helmet=gearIds.helmet==='navy'?'#1c3558':gearIds.helmet==='silver'?'#cddae6':team.accent;
+ path(c,'M211 132 202 105q0-32 32-48l44 2q27 11 29 40l-8 20-12-15-61 14-3 23Z',helmet,'#0b1829',6);
+ path(c,'M213 113q35-19 90-18l-2 24-22 10-51 7Z',gearIds.visor==='goldvisor'?'#efc255bb':gearIds.visor==='ice'?'#62dfffbb':'#7cb3cd88','#d6efff',2);
+ path(c,'M232 142l12 16m23-4 14 2',null,'#442d36',3);
+ if(goalie){
+  const maskColors={flamemask:'#d85d35',boltmask:'#374bd2',sharkmask:'#217e97',crownmask:'#a77d24'};
+  path(c,'M211 102 253 86l48 14-5 57-36 27-37-27Z',maskColors[gearIds.mask]??team.color,team.accent,4);
+  const maskArt={flamemask:badgeShapes.flame,boltmask:badgeShapes.bolt,sharkmask:'M13 15 24 32 32 16 40 32 51 15 48 39 17 39Z',crownmask:badgeShapes.crown};
+  if(maskArt[gearIds.mask]){c.save();c.translate(239,90);c.scale(.63,.63);path(c,maskArt[gearIds.mask],team.accent);c.restore();}
+  path(c,'M220 126h70l-10 27-22 16-25-15Zm8 5 51 22m9-22-51 23m16-26v33m14-33v32',null,'#e2edf5',3);
+  path(c,'M171 360 223 344l13 136h-80Zm104-13 59-3 34 136h-79Z',gearIds.pads==='propads'?'#eac461':gearIds.pads==='stormpads'?team.color:'#c0d8e5','#081727',5);
+  path(c,'M89 319q-29-13-39 13t15 38l44-9 11-23Z',gearIds.glove==='vacuum'?'#ecc763':gearIds.glove==='trap'?team.accent:'#8bb8cc','#13283e',5);
+  path(c,'M62 331l40 22m-38-32 35 28m-44-11 38 19',null,'#325677',3);
+ }
+ path(c,'M97 368l91 18 251 67 20-5 7 10-20 12L89 395Z',gearIds.stick==='chrome'?'#ffd564':gearIds.stick==='neon'?'#68efff':'#c4d0df','#0a1421',5);
+ path(c,'M83 361l34 4 19 23-22 19-35-17-8-16Zm295-4 30-9 32 13 5 21-25 17-35-9Z','#142b43','#587690',4);
+ c.save();c.transform(1,-.16,.17,1,0,0);c.font='italic 950 86px system-ui';c.textAlign='center';c.strokeStyle='#102b43';c.lineWidth=8;c.strokeText(number,204,344);c.fillStyle=team.accent;c.fillText(number,204,344);c.restore();
+ for(let i=0;i<90;i++){
+  const x=(i*107)%470,y=355+(i*29)%124;
+  c.globalAlpha=.18+(i%3)*.12;c.fillStyle='#cfeeff';c.beginPath();c.arc(x,y,1+(i%4)*.45,0,Math.PI*2);c.fill();
+ }
+ c.restore();
+}
+function crest(id,large=false){return '<canvas class="crest '+(large?'large':'')+'" width="64" height="64" data-crest="'+id+'" aria-hidden="true"></canvas>';}
+function drawArt(){
+ document.querySelectorAll('[data-crest]').forEach(canvas=>paintBadge(canvas,teams[Number(canvas.dataset.crest)]));
+ document.querySelectorAll('[data-portrait]').forEach(canvas=>{
+  const p=canvas.dataset.portrait==='career'?career:null;
+  paintPortrait(canvas,teams[p?.team??0],p?.number??19,p?.role==='goalie',p?.equipped);
+ });
+}
+const app=document.querySelector('#app');
+const storageKey='pro-hockey-careers-v1';
+let storageOK=true;
+function getSaved(key,fallback){
+ try{return JSON.parse(localStorage.getItem(key))??fallback;}
+ catch{return fallback;}
+}
+let slots=getSaved(storageKey,[null,null,null]);
+if(!Array.isArray(slots)||slots.length!==3) slots=[null,null,null];
+let muted=getSaved('pro-hockey-muted',true),slot=-1,career=null,screen='slots',notice='',audio=null,timer=0,frame=0,match=null,drill=null,quiz=null;
+const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
+const int=(min,max)=>Math.floor(Math.random()*(max-min+1))+min;
+const shuffle=list=>Array.from(list).map(value=>[Math.random(),value]).sort((a,b)=>a[0]-b[0]).map(entry=>entry[1]);
+const escapeHTML=value=>String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const playerName=()=>escapeHTML(career.name);
+const isGoalie=()=>career.role==='goalie';
+const teamName=id=>teams[id].city+' '+teams[id].mascot;
+const currency=value=>value.toLocaleString('en-CA');
+const stage=()=>career.phase==='junior'?'Junior season':career.phase==='regular'?'Pro season '+career.year:career.phase==='playoffs'?'Northstar playoffs':career.phase==='draft'?'Draft Day':'Season '+career.year;
+const stats=()=>({gp:0,w:0,g:0,a:0,plus:0,sv:0,ga:0,so:0,seconds:0,blocks:0});
+const statName={shoot:'Shooting',speed:'Speed',sense:'Hockey IQ',reflex:'Reflexes'};
+const rounds=['Quarterfinal','Semifinal','Northstar Cup Final'];
+function persist(){
+ if(career&&slot>=0)slots[slot]=career;
+ try{
+  localStorage.setItem(storageKey,JSON.stringify(slots));
+  localStorage.setItem('pro-hockey-muted',JSON.stringify(muted));
+  storageOK=true;
+ }catch{storageOK=false;}
+ updateFooter();
+}
+function updateFooter(){
+ const node=document.querySelector('#footer');
+ node.textContent=storageOK?'Northstar Hockey League · Autosaves on this browser':'Browser storage is unavailable. This session can be played, but progress may be lost on reload.';
+}
+function initAudio(){
+ if(muted)return;
+ try{audio??=new (window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume().catch(()=>{});}catch{}
+}
+function sound(kind){
+ if(muted)return;
+ initAudio();
+ if(!audio)return;
+ const now=audio.currentTime;
+ const tones=kind==='horn'?[[125,0,.65],[158,0,.65],[187,0,.65],[148,.73,.48],[187,.73,.48]]:kind==='puck'?[[180,0,.08]]:[[385,0,.11],[520,.09,.16]];
+ for(const [freq,start,duration] of tones){
+  const osc=audio.createOscillator(),amp=audio.createGain(),t=now+start;
+  osc.type=kind==='horn'?'triangle':'sine';osc.frequency.value=freq;
+  amp.gain.setValueAtTime(.001,t);amp.gain.exponentialRampToValueAtTime(kind==='horn'?.075:.11,t+.018);
+  amp.gain.exponentialRampToValueAtTime(.001,t+duration);osc.connect(amp).connect(audio.destination);osc.start(t);osc.stop(t+duration);
+ }
+ if(kind==='horn'){
+  const buffer=audio.createBuffer(1,audio.sampleRate,audio.sampleRate),values=buffer.getChannelData(0);
+  for(let i=0;i<values.length;i++)values[i]=(Math.random()*2-1)*.25;
+  const crowd=audio.createBufferSource(),amp=audio.createGain();crowd.buffer=buffer;amp.gain.setValueAtTime(.1,now);amp.gain.exponentialRampToValueAtTime(.001,now+1);crowd.connect(amp).connect(audio.destination);crowd.start();
+ }
+}
+function skill(attr){
+ return career.attrs[attr]+Object.values(career.equipped).reduce((sum,id)=>{
+  const item=gear.find(g=>g.id===id);
+  return sum+(item?.attr===attr?item.boost:0);
+ },0);
+}
+function overall(){
+ const trained=Object.values(career.attrs).reduce((sum,v)=>sum+v,0);
+ const base=career.year===0?65:75;
+ return clamp(base+Math.floor(career.xp/350)+Math.floor(trained/4),65,99);
+}
+function rankIndex(){return ranks.findLastIndex(entry=>overall()>=entry[1]);}
+function fixtures(){
+ const rotation=teams.map(t=>t.id);
+ return Array.from({length:15},()=>{
+  const pairings=rotation.slice(0,8).map((id,i)=>[id,rotation[15-i]]);
+  rotation.splice(1,0,rotation.pop());
+  return pairings;
+ });
+}
+function resetSeason(c){
+ c.gp=0;c.season=stats();c.playoff=stats();c.schedule=fixtures();
+ c.table=teams.map(t=>({id:t.id,w:0,l:0,otl:0,gf:0,ga:0}));
+ c.series=null;c.last=null;c.yearAwards=[];c.event=null;
+}
+function createCareer(values){
+ const role=values.role in positions?values.role:'goalie';
+ const prefs=Number(values.team);
+ const first=values.path==='junior';
+ const c={
+  name:values.name.trim().slice(0,24),number:clamp(Number(values.number)||0,0,99),role,preference:prefs,team:prefs,
+  phase:first?'junior':'draft',year:0,xp:0,bucks:200,energy:100,chem:50,hype:0,salary:140,
+  attrs:{shoot:0,speed:0,sense:0,reflex:0},owned:gear.filter(g=>g.cost===0).map(g=>g.id),
+  equipped:Object.fromEntries(gear.filter(g=>g.cost===0).map(g=>[g.slot,g.id])),
+  career:stats(),junior:stats(),cups:0,medals:{},locker:0,posters:[],poster:null,eventOrder:shuffle(events.map((_,i)=>i)),
+  quizOrder:shuffle(trivia.map((_,i)=>i)),quizGame:-1,drillBests:{},games:0,history:[]
+ };
+ resetSeason(c);
+ return c;
+}
+function nextOpponent(){
+ if(career.phase==='playoffs'){
+  const {pairs,index}=career.series;return pairs[index].ids.find(id=>id!==career.team);
+ }
+ if(career.phase==='junior'||career.phase==='regular'){
+  return career.schedule[career.gp].find(pair=>pair.includes(career.team)).find(id=>id!==career.team);
+ }
+ return null;
+}
+function orderedTable(){return [...career.table].sort((a,b)=>(b.w*2+b.otl)-(a.w*2+a.otl)||(b.gf-b.ga)-(a.gf-a.ga)||a.id-b.id);}
+function updateTable(a,b,sa,sb,extra,winning=a){
+ const home=career.table[a],away=career.table[b];
+ home.gf+=sa;home.ga+=sb;away.gf+=sb;away.ga+=sa;
+ const won=winning===a?home:away,lost=winning===a?away:home;
+ won.w++;lost[extra?'otl':'l']++;
+}
+function simulateRestOfRound(){
+ const pairings=career.schedule[career.gp];
+ for(const [a,b] of pairings){
+  if(a===career.team||b===career.team)continue;
+  const first=int(1,5),second=int(1,5),extra=first===second;
+  const firstWins=extra?Math.random()<.5:first>second;
+  updateTable(a,b,first+(extra&&firstWins?1:0),second+(extra&&!firstWins?1:0),extra,firstWins?a:b);
+ }
+}
+function pair(k,l){return {ids:[k,l],wins:[0,0]};}
+function setPlayoffRound(teamsInOrder,round){
+ const pairs=[];
+ for(let i=0;i<teamsInOrder.length/2;i++)pairs.push(pair(teamsInOrder[i],teamsInOrder.at(-i-1)));
+ career.series={round,pairs,index:pairs.findIndex(x=>x.ids.includes(career.team)),completed:false};
+}
+function awardSeason(){
+ const p=career.season,q=career.playoff,won=career.series?.completed&&career.series.round===2&&career.series.pairs[career.series.index].wins[career.series.pairs[career.series.index].ids.indexOf(career.team)]===2;
+ const list=[];
+ if(won){career.cups++;list.push('cup');}
+ if(isGoalie()){
+  if(p.w>=6&&savePercent(p)>=89)list.push('goalie');
+  if(p.w>=9||p.so>=4)list.push('mvp');
+  if(career.year===1&&p.w>=5)list.push('rookie');
+  if(won&&q.w>=6&&savePercent(q)>=87)list.push('playoff');
+ }else{
+  if(p.g>=10)list.push('rocket');
+  if(p.g+p.a>=16)list.push('points');
+  if(p.g+p.a>=20)list.push('mvp');
+  if(career.year===1&&p.g+p.a>=9)list.push('rookie');
+  if(won&&q.g+q.a>=6)list.push('playoff');
+ }
+ list.forEach(id=>career.medals[id]=(career.medals[id]??0)+1);
+ career.yearAwards=list;career.bucks+=list.length*175;career.phase='awards';
+ career.history.push({year:career.year,team:career.team,season:{...p},playoff:{...q},awards:list});
+}
+function advancePlayoffs(won){
+ const series=career.series,own=series.pairs[series.index],playerSide=own.ids.indexOf(career.team);
+ own.wins[won?playerSide:1-playerSide]++;
+ for(const p of series.pairs){
+  if(p===own||p.wins.includes(2))continue;
+  p.wins[int(0,1)]++;
+ }
+ if(!own.wins.includes(2))return;
+ series.completed=true;
+ if(own.wins[playerSide]<2||series.round===2){
+  awardSeason();return;
+ }
+ const winners=series.pairs.map(p=>{
+  while(!p.wins.includes(2))p.wins[int(0,1)]++;
+  return p.ids[p.wins.indexOf(2)];
+ });
+ setPlayoffRound(winners,series.round+1);
+}
+function advanceSchedule(won,extra,score,against){
+ if(career.phase==='playoffs'){advancePlayoffs(won);return;}
+ simulateRestOfRound();
+ const opp=nextOpponent();
+ updateTable(career.team,opp,score,against,extra,won?career.team:opp);career.gp++;
+ if(career.phase==='junior'&&career.gp===10){career.phase='draft';return;}
+ if(career.phase!=='regular'||career.gp<12)return;
+ const seeded=orderedTable().slice(0,8).map(x=>x.id);
+ if(seeded.includes(career.team)){career.phase='playoffs';setPlayoffRound(seeded,0);}
+ else awardSeason();
+}
+function savePercent(p){return p.sv+p.ga?100*p.sv/(p.sv+p.ga):0;}
+function saveLabel(p){return p.sv+p.ga?savePercent(p).toFixed(1)+'%':'—';}
+function goalAverage(p){return p.seconds?(p.ga*3600/p.seconds).toFixed(2):'—';}
+function recordStats(destination,line){
+ for(const key of Object.keys(line))destination[key]+=line[key];
+}
+function applyEffects(effects){
+ for(const [key,value] of Object.entries(effects)){
+  if(key==='special'){career.attrs[isGoalie()?'reflex':'shoot']+=value;continue;}
+  if(key in career.attrs){career.attrs[key]+=value;continue;}
+  career[key]=clamp(career[key]+value,0,key==='energy'||key==='chem'?100:Infinity);
+ }
+}
+function show(view){
+ clearTimeout(timer);cancelAnimationFrame(frame);screen=view;render();
+ window.scrollTo(0,0);
+}
+function feedback(message){notice=message;render();}
+function btn(action,label,css='',data='',disabled=false){
+ return '<button type="button" class="'+css+'" data-action="'+action+'" '+data+(disabled?' disabled':'')+'>'+label+'</button>';
+}
+function heading(kicker,title,description=''){
+ return '<div class="section-head"><p class="eyebrow">'+kicker+'</p><h2>'+title+'</h2>'+(description?'<p class="muted">'+description+'</p>':'')+'</div>';
+}
+function metrics(values){return '<div class="stats">'+values.map(([label,value])=>'<div class="stat"><strong>'+value+'</strong><small>'+label+'</small></div>').join('')+'</div>';}
+function statsView(p,all=false){
+ if(isGoalie())return metrics([['Wins',p.w],['Save %',saveLabel(p)],['GAA',goalAverage(p)],['Shutouts',p.so]]);
+ return metrics([['Goals',p.g],['Assists',p.a],['Points',p.g+p.a],[all?'Plus / minus':'+/−',p.plus>0?'+'+p.plus:p.plus]]);
+}
+function slotsView(){
+ return '<section class="hero panel"><canvas class="hero-art" data-portrait="welcome" aria-hidden="true"></canvas><div class="copy"><p class="eyebrow">Northstar Hockey League</p><h1>Pro Hockey</h1><h2>Career Mode</h2><p>Get drafted, take the ice, and chase the Northstar Cup.</p></div></section><section class="grid slots" aria-label="Career slots">'+slots.map((c,i)=>{
+  const data='data-index="'+i+'"';
+  return '<article class="panel slot"><p class="eyebrow">Career '+(i+1)+'</p>'+(c?'<div class="row">'+crest(c.team)+'<div><h3>'+escapeHTML(c.name)+' · #'+c.number+'</h3><span class="muted">'+teamName(c.team)+' · '+positions[c.role][0]+'</span></div></div>':'<h3>Open slot</h3>')+'<div class="row">'+btn(c?'resume':'new',c?'Continue career':'Create player','gold',data)+(c?btn('delete','Delete','quiet danger',data):'')+'</div></article>';
+ }).join('')+'</section>';
+}
+function createView(){
+ return '<section>'+heading('Player registration','Create your player')+'<form id="player-form" class="stack"><div class="panel grid"><label class="field">Player name<input name="name" required maxlength="24" autocomplete="off" placeholder="Alex Frost"></label><label class="field">Jersey number<input name="number" type="number" min="0" max="99" value="19" required></label></div><fieldset class="panel"><legend>Playstyle</legend><div class="grid">'+Object.entries(positions).map(([id,[label,,desc]])=>'<label class="pick"><input type="radio" name="role" value="'+id+'" '+(id==='goalie'?'checked':'')+'><span><strong>'+label+'</strong>'+(id==='goalie'?' <small class="gold-text">Fan Fave</small>':'')+'<br><small class="muted">'+desc+'</small></span></label>').join('')+'</div></fieldset><fieldset class="panel"><legend>Choose your favourite team</legend><div class="teams">'+teams.map(t=>'<label class="pick"><input type="radio" name="team" value="'+t.id+'" '+(t.id===0?'checked':'')+'>'+crest(t.id)+'<span>'+t.city+'<br><strong>'+t.mascot+'</strong></span></label>').join('')+'</div></fieldset><fieldset class="panel"><legend>Career start</legend><div class="grid"><label class="pick"><input name="path" value="junior" type="radio" checked><span><strong>Junior season</strong><br>Play 10 games before Draft Day.</span></label><label class="pick"><input name="path" value="draft" type="radio"><span><strong>Straight to the draft</strong><br>Skip to the pro draft stage.</span></label></div></fieldset><div class="row"><button class="gold" type="submit">Start career</button>'+btn('slots','Back to careers','quiet')+'</div></form></section>';
+}
+function cardView(){
+ const tier=rankIndex(),r=ranks[tier];
+ return '<article class="card" data-tier="'+tier+'" style="--tier:'+r[2]+'"><canvas class="portrait" data-portrait="career" aria-hidden="true"></canvas><div class="card-top row spread">'+crest(career.team,true)+'<div class="rating">'+overall()+'<small>OVR</small></div></div><div class="card-bottom"><p class="rank">'+r[0]+'</p><h2>'+playerName()+'</h2><p>#'+career.number+' · '+positions[career.role][1]+' · '+teamName(career.team)+'</p></div></article>';
+}
+function nextLabel(){
+ if(career.phase==='draft')return 'Draft Day';
+ if(career.phase==='awards')return 'Awards Night';
+ if(career.phase==='contract')return 'Contract desk';
+ if(career.phase==='free')return 'Free agency';
+ return 'Next game';
+}
+function phaseText(){
+ if(career.phase==='junior')return 'Game '+(career.gp+1)+' of 10';
+ if(career.phase==='regular')return 'Game '+(career.gp+1)+' of 12';
+ if(career.phase==='playoffs'){
+  const s=career.series,own=s.pairs[s.index],i=own.ids.indexOf(career.team);
+  return rounds[s.round]+' · Series '+own.wins[i]+'–'+own.wins[1-i];
+ }
+ return nextLabel();
+}
+function nextView(){
+ const opp=nextOpponent();
+ return '<div class="panel"><p class="eyebrow">'+stage()+'</p><div class="row spread"><div><h2>'+(opp===null?nextLabel():teamName(opp))+'</h2><p class="muted">'+(opp===null?(career.phase==='draft'?'See who calls your name.':career.phase==='awards'?'See the season’s trophy winners.':'Decide where to play next.'):phaseText())+'</p></div>'+(opp===null?'':crest(opp,true))+btn('next',nextLabel(),'gold')+'</div></div>';
+}
+function hubView(){
+ const p=career.phase==='junior'||career.year===0?career.junior:career.season;
+ const milestone=ranks[rankIndex()+1];
+ const attrKeys=isGoalie()?['reflex','speed','sense']:['shoot','speed','sense'];
+ return '<div class="dashboard">'+cardView()+'<div class="stack">'+nextView()+'<section class="panel"><div class="row spread"><h3>Season stats</h3><span class="muted">'+p.gp+' GP · '+p.w+' W</span></div>'+statsView(p)+'</section><section class="panel"><h3>Pro career stats</h3>'+statsView(career.career,true)+metrics([['Games',career.career.gp],['Cups',career.cups],['MVPs',career.medals.mvp??0],['Awards',Object.entries(career.medals).filter(([id])=>id!=='cup').reduce((sum,[,n])=>sum+n,0)]])+'</section></div></div><div class="grid"><section class="panel"><h3>Player development</h3><p class="muted">'+currency(career.xp)+' XP'+(milestone?' · '+milestone[0]+' at '+milestone[1]+' OVR':' · Legend tier')+'</p><div class="track" role="meter" aria-label="XP toward next rating increase" aria-valuemin="0" aria-valuemax="350" aria-valuenow="'+(career.xp%350)+'"><i style="width:'+((career.xp%350)/3.5)+'%"></i></div><div class="row">'+attrKeys.map(k=>'<span>'+statName[k]+' <strong class="gold-text">+'+skill(k)+'</strong></span>').join('')+'</div></section><section class="panel"><div class="row spread"><h3>Energy '+career.energy+'%</h3>'+btn('rest','Rest +30','quiet','',career.energy>=100)+'</div><div class="track energy" role="meter" aria-label="Energy" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+career.energy+'"><i style="width:'+career.energy+'%"></i></div><p class="muted">Team chemistry '+career.chem+'%'+(career.hype?' · Hype +'+career.hype:'')+'</p></section></div>'+(career.event===null?'':eventView());
+}
+function eventView(){
+ const [title,body,a,ae,b,be]=events[career.event];
+ return '<section class="panel"><p class="eyebrow">Be a Pro</p><h2>'+title+'</h2><p>'+body+'</p><div class="row">'+btn('event',a,'gold','data-index="0"',(ae.bucks??0)<-career.bucks)+btn('event',b,'','data-index="1"',(be.bucks??0)<-career.bucks)+'</div></section>';
+}
+function trainingView(){
+ return '<section>'+heading('Practice rink','Training','Drills cost 12 energy and award XP. Pass a drill to add an attribute point.')+'<p>Energy <strong class="gold-text">'+career.energy+'%</strong></p><div class="grid">'+drills.filter(d=>isGoalie()?d[0]!=='shot':['shot','skate'].includes(d[0])).map(([id,label,attr,desc])=>'<article class="panel"><h3>'+label+'</h3><p class="muted">'+desc+'</p><p>+'+statName[attr]+(career.drillBests[id]?' · Best '+career.drillBests[id]:'')+'</p>'+btn('drill','Start drill','gold','data-id="'+id+'"',career.energy<12)+'</article>').join('')+'<article class="panel"><h3>Coach’s Quiz</h3><p class="muted">Answer a hockey question for XP and team chemistry. Available once per game day.</p>'+btn('quiz','Take the quiz','','',career.quizGame===career.games)+'</article></div><div class="row" style="margin-top:1rem">'+btn('rest','Rest +30 energy','quiet','',career.energy===100)+'</div></section>';
+}
+function shopView(){
+ const categories=isGoalie()?['pads','glove','mask','skates']:['stick','skates','visor','helmet','celebration'];
+ return '<section class="stack">'+heading('Equipment room','Gear Shop','Balance · '+currency(career.bucks)+' Puck Bucks')+categories.map(category=>'<section><h3 style="text-transform:capitalize;margin-bottom:.6rem">'+category+'</h3><div class="grid">'+gear.filter(g=>g.slot===category).map(g=>{
+  const owned=career.owned.includes(g.id),equipped=career.equipped[category]===g.id;
+  return '<article class="panel"><h3>'+g.name+'</h3><p class="muted">'+(g.boost?'+'+g.boost+' '+statName[g.attr]:category==='celebration'?'Goal celebration':'Standard equipment')+'</p><p class="gold-text">'+(owned?'Owned':currency(g.cost)+' Puck Bucks')+'</p>'+btn('gear',equipped?'Equipped':owned?'Equip':'Buy &amp; equip',equipped?'quiet':'gold','data-id="'+g.id+'"',equipped||!owned&&career.bucks<g.cost)+'</article>';
+ }).join('')+'</div></section>').join('')+'</section>';
+}
+const posters={rookie:'Draft Night',goalie:'The Crease',firstwin:'First Pro Win',allstar:'All-Star Spotlight',cup:'Northstar Champions',legend:'Career Legend'};
+function lockerView(){
+ const trophies=Object.entries(career.medals);
+ return '<section class="stack">'+heading('Home ice','Locker Room','Showcase your career trophies, rings, and posters.')+'<div class="grid"><div class="panel"><h3>Locker upgrade '+career.locker+' / 3</h3><p class="muted">'+['Standard stall','Backlit nameplate','Silver display case','Gold championship suite'][career.locker]+'</p>'+btn('locker-up',career.locker===3?'Fully upgraded':'Upgrade · '+currency([450,900,1800][career.locker]),'gold','',career.locker===3||career.bucks<[450,900,1800][career.locker])+'</div><div class="panel"><h3>Championship rings</h3><p class="trophy">'+(career.cups?'💍 × '+career.cups:'—')+'</p></div></div><section><h3>Trophy case</h3><div class="grid" style="margin-top:.6rem">'+(trophies.length?trophies.map(([id,count])=>'<article class="panel"><div class="trophy">'+awards[id][1]+'</div><h3>'+awards[id][0]+'</h3><p class="muted">Won '+count+' time'+(count===1?'':'s')+'</p></article>').join(''):'<p class="muted">Your first trophy will appear here after Awards Night.</p>')+'</div></section><section><h3>'+(isGoalie()?'Goalie poster wall':'Poster wall')+'</h3><div class="grid" style="margin-top:.6rem">'+(career.posters.length?career.posters.map(id=>'<article class="panel"><div class="row">'+crest(career.team)+'<h3>'+posters[id]+'</h3></div><p class="muted">'+(career.poster===id?'On display':'Unlocked poster')+'</p>'+btn('poster',career.poster===id?'Displayed':'Hang poster','quiet','data-id="'+id+'"',career.poster===id)+'</article>').join(''):'<p class="muted">Earn posters by reaching career milestones.</p>')+'</div></section></section>';
+}
+function leagueView(){
+ const current=career.series;
+ return '<section class="stack">'+heading('Northstar Hockey League','Standings','The top eight pro teams qualify for the Northstar playoffs.')+'<div class="panel table-wrap"><table><thead><tr><th scope="col">Rank</th><th scope="col">Team</th><th scope="col">W</th><th scope="col">L</th><th scope="col">OTL</th><th scope="col">PTS</th><th scope="col">GD</th></tr></thead><tbody>'+orderedTable().map((r,i)=>'<tr class="'+(r.id===career.team?'mine':'')+'"><td>'+(i+1)+'</td><td>'+teamName(r.id)+'</td><td>'+r.w+'</td><td>'+r.l+'</td><td>'+r.otl+'</td><td>'+(r.w*2+r.otl)+'</td><td>'+(r.gf-r.ga)+'</td></tr>').join('')+'</tbody></table></div>'+(current?'<div class="panel"><h3>'+rounds[current.round]+'</h3>'+current.pairs.map(p=>'<p>'+teamName(p.ids[0])+' '+p.wins[0]+'–'+p.wins[1]+' '+teamName(p.ids[1])+'</p>').join('')+'</div>':'')+(career.history.length?'<div class="panel"><h3>Season history</h3>'+career.history.map(s=>'<p>Year '+s.year+' · '+teamName(s.team)+' · '+s.season.w+' wins'+(s.awards.includes('cup')?' · Northstar Cup champion':'')+'</p>').join('')+'</div>':'')+'</section>';
+}
+function draftView(){
+ const pick=career.draftTeam;
+ return '<section class="panel arena">'+heading('Draft Day',pick===undefined?'The pick is in':teamName(pick),pick===undefined?'The commissioner is walking to the microphone.':'Selected '+playerName()+' as the newest '+positions[career.role][0].toLowerCase()+'.')+(pick===undefined?btn('reveal-draft','Reveal the pick','gold'):'<div class="row">'+crest(pick,true)+btn('sign-rookie','Sign rookie contract','gold')+'</div>')+'</section>';
+}
+function awardsView(){
+ return '<section class="panel arena stack">'+heading('Northstar awards broadcast','Awards Night',career.yearAwards.includes('cup')?'Northstar Cup champions!':'Season '+career.year+' · '+teamName(career.team))+(career.yearAwards.length?'<div class="grid">'+career.yearAwards.map(id=>'<div class="panel"><div class="trophy">'+awards[id][1]+'</div><h3>'+awards[id][0]+'</h3><p>'+playerName()+'</p></div>').join('')+'</div><p class="gold-text">Award bonus · +'+currency(175*career.yearAwards.length)+' Puck Bucks</p>':'<p class="muted">This season’s awards went to other players. Return next season for another run.</p>')+'<div>'+btn('contracts','Continue to contracts','gold')+'</div></section>';
+}
+function contractView(){
+ if(career.phase==='free'){
+  return '<section class="stack">'+heading('Free agency','Choose your club','Each offer pays 220 Puck Bucks per game. Chemistry resets to 50%.')+'<div class="grid">'+career.offers.map(id=>'<article class="panel"><div class="row">'+crest(id)+'<h3>'+teamName(id)+'</h3></div>'+btn('sign','Sign with '+teams[id].code,'gold','data-index="'+id+'"')+'</article>').join('')+'</div>'+btn('cancel-free','Back to contract desk','quiet')+'</section>';
+ }
+ return '<section>'+heading('Offseason','Contract desk',teamName(career.team))+'<div class="grid"><article class="panel"><h3>Hometown discount</h3><p>160 Puck Bucks per game · +15 chemistry.</p>'+btn('hometown','Stay with the club','gold')+'</article><article class="panel"><h3>The big bag</h3><p>260 Puck Bucks per game · −7 chemistry.</p>'+btn('bigbag','Sign the big deal','gold')+'</article><article class="panel"><h3>Free agency</h3><p>Try a new club for 220 Puck Bucks per game.</p>'+btn('free','Review offers')+'</article></div></section>';
+}
+function quizView(){
+ const [question,answer]=trivia[quiz.id];
+ return '<section class="panel arena stack">'+heading('Coach’s Quiz',question)+(quiz.done?'<p class="'+(quiz.correct?'good':'muted')+'" role="status">'+(quiz.correct?'Correct! +45 XP and +4 chemistry.':'Correct answer · '+answer)+'</p>'+btn('view','Back to training','gold','data-id="training"'):'<div class="grid">'+quiz.answers.map((value,i)=>btn('answer',value,'','data-index="'+i+'"')).join('')+'</div>')+'</section>';
+}
+function render(){
+ const locked=screen==='live'||screen==='drill'||screen==='quiz'&&!quiz?.done;
+ document.querySelector('#tools').innerHTML=btn('mute',muted?'Sound off':'Sound on','quiet','aria-pressed="'+!muted+'"')+(career&&!locked?btn('slots','Careers','quiet'):'');
+ let body='';
+ if(screen==='slots')body=slotsView();
+ else if(screen==='create')body=createView();
+ else {
+  const pages={hub:hubView,training:trainingView,shop:shopView,locker:lockerView,league:leagueView,draft:draftView,awards:awardsView,contract:contractView,quiz:quizView,pre:preView,live:liveView,recap:recapView,drill:drillView,drillend:drillEndView};
+  body=(pages[screen]??hubView)();
+  if(!locked&&screen!=='recap'){
+   body='<nav class="nav" aria-label="Career">'+[['hub','Career Hub'],['training','Training'],['shop','Gear Shop'],['locker','Locker Room'],['league','Standings']].map(([id,label])=>btn('view',label,'','data-id="'+id+'"'+(screen===id?' aria-current="page"':''))).join('')+'</nav>'+body;
+  }
+  body='<div class="stack">'+body+(notice?'<div class="notice" role="status">'+notice+'</div>':'')+'</div>';
+ }
+ app.innerHTML=body;
+ drawArt();updateFooter();
+ if(screen==='live'){
+  const feed=app.querySelector('.feed');
+  if(feed)feed.scrollTop=feed.scrollHeight;
+ }
+}
+function preView(){
+ const opp=nextOpponent(),special=career.gp%4===3&&career.phase!=='playoffs';
+ return '<section class="panel arena stack">'+heading(stage(),'Next up',phaseText()+(special?' · Rivalry night':''))+board(career.team,opp,'VS')+'<p class="muted">Choose how to play. Both modes count toward your career.</p><div class="grid">'+btn('start-match','Play Action Moments','gold','data-id="action"')+btn('start-match','Quick Sim','quiet','data-id="sim"')+'</div></section>';
+}
+function board(home,away,score){
+ return '<div class="scoreboard"><div>'+crest(home,true)+'<p><strong>'+teams[home].code+'</strong><br><small class="muted">'+teams[home].mascot+'</small></p></div><div class="score" aria-label="'+(score==='VS'?'Versus':score)+'">'+score+'</div><div>'+crest(away,true)+'<p><strong>'+teams[away].code+'</strong><br><small class="muted">'+teams[away].mascot+'</small></p></div></div>';
+}
+function addFeed(tag,text){match.feed.push([tag,text]);}
+function startMatch(mode){
+ const spotlight=career.phase==='playoffs'||career.gp%4===3;
+ match={mode,team:career.team,opp:nextOpponent(),period:0,us:0,them:0,statGoals:0,statAgainst:0,feed:[],line:stats(),moment:null,extra:false,shootout:null,minutes:60,spotlight,settled:false,highlights:0};
+ addFeed('LIVE',teamName(match.team)+' and '+teamName(match.opp)+' are on the ice.');
+ show('live');queuePeriod(600);
+}
+function queuePeriod(delay=850){
+ clearTimeout(timer);
+ timer=setTimeout(()=>{
+  if(screen==='live'&&!match.moment&&!match.settled)advanceGame();
+ },delay);
+}
+function addGoal(side,credit){
+ if(side==='them'){
+  match.them++;match.statAgainst++;
+  addFeed(match.tag,teams[match.opp].star+' scores for '+teams[match.opp].code+' · '+match.us+'–'+match.them+'.');
+  return;
+ }
+ match.us++;match.statGoals++;
+ if(credit==='goal'){
+  match.line.g++;
+  match.celebration=career.equipped.celebration;
+  const celebration=gear.find(g=>g.id===career.equipped.celebration).name;
+  addFeed(match.tag,playerName()+' scores! '+celebration+' celebration · '+match.us+'–'+match.them+'.');
+ }else if(credit==='assist'){
+  match.line.a++;
+  addFeed(match.tag,playerName()+' sets up the goal · '+match.us+'–'+match.them+'.');
+ }else addFeed(match.tag,teams[match.team].star+' scores for '+teams[match.team].code+' · '+match.us+'–'+match.them+'.');
+ sound('horn');
+}
+function ordinaryPeriod(){
+ const ovr=overall();
+ const condition=(career.energy-75)*.0016+(career.chem-50)*.0025+career.hype*.028;
+ const talent=(ovr-72)*.006+condition+skill('speed')*.003+skill('sense')*.002;
+ const ours=.41+talent+(isGoalie()?0:skill(career.role==='playmaker'?'sense':'shoot')*.006);
+ const theirs=.42-(isGoalie()?talent*.72+skill('reflex')*.007:0);
+ if(isGoalie())match.line.sv+=int(7,11);
+ let scored=false;
+ for(let i=0;i<2;i++){
+  if(Math.random()<clamp(ours,.18,.78)){
+   const credit=isGoalie()?'':Math.random()<.68?(Math.random()<(career.role==='sniper'?.74:career.role==='playmaker'?.27:.5)?'goal':'assist'):'';
+   addGoal('us',credit);scored=true;
+  }
+  if(Math.random()<clamp(theirs,.17,.72)){addGoal('them');scored=true;}
+ }
+ if(!scored)addFeed(match.tag,isGoalie()?playerName()+' shuts the door through a scoreless period.':'Both clubs trade chances in a scoreless period.');
+}
+function highlightType(){
+ if(isGoalie())return ['point','deke','scramble'][(career.games+match.period)%3];
+ if(career.role==='sniper')return match.period%2?'breakaway':'one';
+ if(career.role==='playmaker')return match.period%2?'pass':'saucer';
+ return ['battle','block','duel'][(career.games+match.period)%3];
+}
+const highlightInfo={
+ breakaway:['Breakaway','Shoot at the open corner.','target'],
+ one:['One-timer','Shoot when the marker enters the green zone.','timing'],
+ pass:['Backdoor pass','Send the puck to the open teammate.','target'],
+ saucer:['Saucer pass','Time the pass to clear the defender’s stick.','timing'],
+ battle:['Board battle','Tap Hard Skate repeatedly to win the puck.','mash'],
+ block:['Block the shot','Step into the highlighted shooting lane.','target'],
+ duel:['Cartoon enforcer duel','Time your move in the green zone. Win two of three rounds.','timing'],
+ point:['Point-blank chance','Cover the highlighted part of the net on the release.','reaction'],
+ deke:['Breakaway deke','Wait for RELEASE. The first flash is a fake.','reaction'],
+ scramble:['Crease scramble','Read three consecutive shots. Save at least two.','reaction'],
+ shootout:['Shootout save','Wait for the release and cover the shot lane.','reaction'],
+ penalty:['Shootout attempt','Pick the open corner to score.','target']
+};
+function advanceGame(){
+ if(match.period<3){
+  match.period++;match.tag='P'+match.period;
+  ordinaryPeriod();
+  const play=match.mode==='action'&&(match.spotlight||match.period===2);
+  if(play){launchMoment(highlightType());return;}
+  render();queuePeriod();return;
+ }
+ if(match.period===3&&match.us===match.them){
+  match.period=4;match.tag='OT';match.extra=true;match.minutes=65;
+  addFeed('OT','Three-on-three overtime is underway.');
+  if(Math.random()<.48||career.phase==='playoffs'){
+   if(career.phase==='playoffs'&&Math.random()<.16){match.minutes=70;addFeed('OT','A second overtime begins.');}
+   const win=Math.random()<clamp(.51+(overall()-75)*.008,.36,.72);
+   addGoal(win?'us':'them',win&&!isGoalie()&&Math.random()<.55?'goal':'');
+   return concludeGame();
+  }
+  match.tag='SO';
+  addFeed('SO','Overtime ends level. The teams head to a shootout.');
+  if(match.mode==='action'){
+   match.shootout={us:0,them:0,round:0};
+   startShootout();return;
+  }
+  shootoutEnd(Math.random()<.52);return;
+ }
+ concludeGame();
+}
+function startShootout(){
+ match.shootout.round++;
+ launchMoment(isGoalie()?'shootout':'penalty');
+}
+function shootoutEnd(win){
+ if(win)match.us++;else match.them++;
+ addFeed('SO',teams[win?match.team:match.opp].code+' wins the shootout · '+match.us+'–'+match.them+'.');
+ concludeGame();
+}
+function concludeGame(){
+ if(match.settled)return;
+ match.settled=true;
+ const won=match.us>match.them,line=match.line,t=career.phase;
+ const before=rankIndex(),oldOvr=overall();
+ line.gp=1;line.w=Number(won);line.plus=isGoalie()?0:match.statGoals-match.statAgainst;
+ if(isGoalie()){
+  line.ga=match.statAgainst;line.so=Number(match.statAgainst===0);line.seconds=match.minutes*60;
+ }
+ const xp=85+(won?48:0)+(isGoalie()?Math.floor(line.sv/2)+line.so*30:line.g*16+line.a*12)+match.highlights*10;
+ const pay=(t==='junior'?75:career.salary)+(won?48:15)+(isGoalie()?line.so*35:line.g*14+line.a*10);
+ career.xp+=xp;career.bucks+=pay;career.energy=clamp(career.energy-11,0,100);career.hype=0;career.games++;
+ recordStats(t==='junior'?career.junior:t==='playoffs'?career.playoff:career.season,line);
+ if(t!=='junior')recordStats(career.career,line);
+ if(t!=='junior'&&won)unlock('firstwin');
+ advanceSchedule(won,match.extra,match.us,match.them);
+ if(career.cups)unlock('cup');
+ if(rankIndex()>=3)unlock('allstar');
+ if(rankIndex()===4)unlock('legend');
+ if(career.games%2===0&&nextOpponent()!==null&&career.event===null){
+  if(!career.eventOrder.length)career.eventOrder=shuffle(events.map((_,i)=>i));
+  career.event=career.eventOrder.shift();
+ }
+ const featured=isGoalie()?(line.so||line.sv>=28):line.g+line.a>=2;
+ const player=playerName(),a=teams[match.team].star,b=teams[match.opp].star;
+ const stars=featured?[player,won?a:b,won?b:a]:won?[a,player,b]:[b,a,player];
+ career.last={team:match.team,opp:match.opp,score:match.us+'–'+match.them,won,extra:match.extra,shootout:match.tag==='SO',xp,pay,stars,line:{...line},feed:match.feed,celebration:match.celebration,rank:rankIndex()>before&&overall()>oldOvr?ranks[rankIndex()][0]:null};
+ persist();show('recap');
+}
+function unlock(id){if(!career.posters.includes(id))career.posters.push(id);}
+function liveView(){
+ return '<section class="panel arena stack">'+heading('Live broadcast',match.moment?'Action Moment':match.period===0?'Opening faceoff':'On the ice')+board(match.team,match.opp,match.us+'–'+match.them)+(match.moment?momentView(match.moment):'<div class="row">'+btn('fast-game',match.mode==='sim'?'Finish Quick Sim':'Continue broadcast','quiet')+'</div>')+feedView(match.feed)+'</section>';
+}
+function feedView(feed){
+ return '<ol class="feed" aria-label="Play-by-play" aria-live="polite">'+feed.map(([tag,line])=>'<li><b>'+tag+'</b> '+line+'</li>').join('')+'</ol>';
+}
+function recapView(){
+ const r=career.last;
+ return '<section class="panel arena stack">'+heading('Final score',r.won?'Victory':'Game complete',(r.shootout?'Shootout':r.extra?'Overtime':'Regulation')+(r.rank?' · Card upgraded to '+r.rank:''))+board(r.team,r.opp,r.score)+statsView(r.line)+(isGoalie()?'<p class="muted">'+r.line.sv+' saves · '+r.line.ga+' goals allowed</p>':r.celebration?'<p class="goal-celebration '+r.celebration+'"><span aria-hidden="true">✦</span> '+gear.find(g=>g.id===r.celebration).name+'</p>':'')+metrics([['XP earned','+'+r.xp],['Puck Bucks','+'+r.pay],['Energy',career.energy+'%'],['Overall',overall()]])+'<div class="panel"><h3>Three stars</h3><ol>'+r.stars.map(star=>'<li>'+star+'</li>').join('')+'</ol></div><details><summary>Full play-by-play</summary>'+feedView(r.feed)+'</details><div class="row">'+btn('view','Return to Career Hub','gold','data-id="hub"')+'</div></section>';
+}
+function launchMoment(id,round=1,successes=0){
+ let [title,instruction,kind]=highlightInfo[id];
+ const now=performance.now(),h=match.shootout;
+ if(h)title+=' · Round '+h.round;
+ const feint=id==='deke'||id==='shootout'&&h.round%2===0;
+ const skillBonus=isGoalie()?skill('reflex'):skill('sense');
+ match.moment={id,title,instruction,kind,round,successes,target:int(0,2),fake:int(0,2),feint,started:now,ready:now+(feint?980:525),deadline:now+(kind==='mash'?3000:kind==='reaction'?(feint?980:525)+clamp(1100+skillBonus*24,1100,1560):5500),hits:0,zoneStart:.38-Math.min(skillBonus*.006,.12),zoneEnd:.65+Math.min(skillBonus*.006,.12)};
+ if(match.moment.fake===match.moment.target)match.moment.fake=(match.moment.target+1)%3;
+ render();app.querySelector('[data-action="moment"]')?.focus({preventScroll:true});tickMoment();
+}
+function rinkKeys(goalie,mode){
+ const labels=goalie?['Glove left','Center','Block right']:mode==='pass'?['Left wing','Slot','Right wing']:['Left','Center','Right'];
+ return labels.map((label,i)=>btn('moment',label,'','data-index="'+i+'"')).join('');
+}
+function momentView(m){
+ return '<section class="stack"><div><h3>'+m.title+'</h3><p class="muted">'+m.instruction+(m.id==='scramble'?' Shot '+m.round+' of 3.':m.id==='duel'?' Round '+m.round+' of 3.':'')+'</p><p id="moment-clock" class="gold-text" aria-hidden="true"></p></div>'+(m.kind==='timing'?'<div class="meter"><i class="meter-zone" style="left:'+100*m.zoneStart+'%;width:'+100*(m.zoneEnd-m.zoneStart)+'%"></i><i class="meter-cursor" id="cursor"></i></div>'+btn('moment',m.id==='duel'?'Make your move (Space)':'Time it (Space)','gold','data-index="1"'):m.kind==='mash'?btn('moment','Hard Skate (Space)','gold','data-index="1"'):'<div class="rink"><div class="goalmouth">'+rinkKeys(isGoalie(),m.id)+'</div></div><p class="muted">Keys 1, 2, 3 or choose a lane.</p><p id="moment-signal" role="status"></p>')+'</section>';
+}
+function positionAt(now,started,speed=900){
+ const phase=((now-started)/speed)%2;return phase<=1?phase:2-phase;
+}
+function tickMoment(){
+ const m=match.moment,now=performance.now();
+ if(!m||screen!=='live')return;
+ if(now>=m.deadline){resolveMoment(false);return;}
+ document.querySelector('#moment-clock').textContent=Math.ceil((m.deadline-now)/1000)+' s'+(m.kind==='mash'?' · '+m.hits+'/7':'');
+ if(m.kind==='timing')document.querySelector('#cursor').style.left=positionAt(now,m.started)*100+'%';
+ if(m.kind==='target'||m.kind==='reaction')setMomentSignal(m,now);
+ frame=requestAnimationFrame(tickMoment);
+}
+function setMomentSignal(m,now){
+ const released=m.kind==='target'||now>=m.ready;
+ const fake=m.feint&&now>=m.started+230&&now<m.ready-160;
+ const active=released?m.target:fake?m.fake:-1;
+ app.querySelectorAll('[data-action="moment"]').forEach((b,i)=>b.classList.toggle('target',i===active));
+ const label=active===-1?'Read the shooter…':fake?'Fake! Hold your position.':(m.kind==='reaction'?'RELEASE · ':'Open lane · ')+['Left','Center','Right'][active];
+ const signal=document.querySelector('#moment-signal');if(signal.textContent!==label)signal.textContent=label;
+}
+function playMoment(i){
+ const m=match?.moment;
+ if(!m||screen!=='live')return;
+ const now=performance.now();
+ if(now>=m.deadline){resolveMoment(false);return;}
+ if(m.kind==='mash'){
+  m.hits++;if(m.hits>=7)resolveMoment(true);
+  return;
+ }
+ if(m.kind==='timing'){
+  const at=positionAt(now,m.started);resolveMoment(at>=m.zoneStart&&at<=m.zoneEnd);return;
+ }
+ resolveMoment(i===m.target&&(m.kind==='target'||now>=m.ready));
+}
+function resolveMoment(success){
+ const m=match.moment;
+ if(!m)return;
+ match.moment=null;cancelAnimationFrame(frame);sound(success?'cheer':'puck');
+ if(match.shootout){
+  const h=match.shootout;
+  h.us+=Number(isGoalie()?Math.random()<.60:success);
+  h.them+=Number(isGoalie()?!success:Math.random()<.53);
+  addFeed('SO','Round '+h.round+' · '+teams[match.team].code+' '+h.us+'–'+h.them+' '+teams[match.opp].code+'.');
+  if(success)match.highlights++;
+  if(h.round<3||h.us===h.them&&h.round<6){
+   render();clearTimeout(timer);timer=setTimeout(()=>{if(screen==='live'&&!match.settled)startShootout();},700);
+  }else shootoutEnd(h.us===h.them?Math.random()<.5:h.us>h.them);
+  return;
+ }
+ if(isGoalie()){
+  if(success){match.line.sv++;addFeed(match.tag,playerName()+' makes the save!');}
+  else addGoal('them');
+ }
+ const wins=m.successes+Number(success);
+ if((m.id==='scramble'&&m.round<3)||(m.id==='duel'&&m.round<3&&wins<2&&m.round-wins<2)){
+  launchMoment(m.id,m.round+1,wins);return;
+ }
+ if(m.id==='scramble'||m.id==='duel')success=wins>=2;
+ if(success){
+  match.highlights++;
+  if(!isGoalie()&&m.id==='block'){match.line.blocks++;addFeed(match.tag,playerName()+' blocks the shot and clears the zone.');}
+  else if(!isGoalie()&&m.id==='duel'){career.hype=Math.min(career.hype+1,3);addFeed(match.tag,playerName()+' wins the cartoon duel. The bench is fired up!');}
+  else if(!isGoalie())addGoal('us',career.role==='sniper'?'goal':'assist');
+ }else if(!isGoalie())addFeed(match.tag,'The highlight chance slips away.');
+ render();queuePeriod(650);
+}
+function startDrill(id){
+ const d=drills.find(entry=>entry[0]===id),now=performance.now();
+ const total=d[0]==='shot'?Infinity:d[0]==='skate'?8:6;
+ drill={id,label:d[1],attr:d[2],desc:d[3],at:now,release:now,deadline:now,score:0,attempts:0,total,limit:now+(id==='shot'?15000:18000),target:-1,done:false};
+ career.energy-=12;persist();
+ setDrillRep(now);show('drill');app.querySelector('[data-action="drill-key"]')?.focus({preventScroll:true});tickDrill();
+}
+function setDrillRep(now){
+ const d=drill,old=d.target;
+ const targetCount=['skate','glove','blocker','post'].includes(d.id)?2:d.id==='angle'?1:3;
+ d.target=int(0,targetCount-1);
+ if(targetCount>1&&old===d.target)d.target=(old+1)%targetCount;
+ d.at=now;
+ d.release=now+(['glove','blocker','reflex','post'].includes(d.id)?int(300,650):0);
+ d.deadline=d.release+(d.id==='skate'?1400:d.id==='shot'?1350:d.id==='angle'?2100:d.id==='blocker'?1000:1170);
+}
+function drillView(){
+ const d=drill;
+ const labels={shot:['Left','Center','Right'],skate:['Left gate','Right gate'],reflex:['Glove left','Center','Block right'],glove:['High left','High right'],blocker:['Low left','Low right'],post:['Left post','Right post'],angle:['Seal the angle (Space)']}[d.id];
+ const keyHelp=d.id==='angle'?'Press Space or tap when the marker enters the green zone.':labels.length===2?'Use ← and → or tap a side.':'Use 1, 2, 3 or tap a lane.';
+ const lane=labels.map((label,i)=>btn('drill-key',label,d.id==='angle'?'gold':'','data-index="'+i+'"')).join('');
+ return '<section class="panel arena stack">'+heading('Training',d.label,d.desc)+'<div class="row spread gold-text"><strong id="drill-score"></strong><strong id="drill-clock"></strong></div>'+(d.id==='angle'?'<div class="meter"><i class="meter-zone" style="left:38%;width:26%"></i><i class="meter-cursor" id="cursor"></i></div>'+lane:'<div class="rink"><div class="goalmouth" style="grid-template-columns:repeat('+labels.length+',1fr)">'+lane+'</div></div>')+'<p id="drill-signal" role="status"></p><p class="muted">'+keyHelp+'</p>'+btn('quit-drill','End drill','quiet')+'</section>';
+}
+function tickDrill(){
+ const d=drill,now=performance.now();
+ if(screen!=='drill'||d.done)return;
+ if(now>=d.limit||d.attempts>=d.total){finishDrill();return;}
+ if(now>=d.deadline){
+  d.attempts++;setDrillRep(now);
+  if(d.attempts>=d.total){finishDrill();return;}
+ }
+ document.querySelector('#drill-score').textContent=d.score+' successful'+(d.total<Infinity?' · Rep '+(d.attempts+1)+'/'+d.total:'');
+ document.querySelector('#drill-clock').textContent=Math.ceil((d.limit-now)/1000)+' s';
+ if(d.id==='angle')document.querySelector('#cursor').style.left=(positionAt(now,d.at,820)*100)+'%';
+ else app.querySelectorAll('[data-action="drill-key"]').forEach((b,i)=>b.classList.toggle('target',i===d.target&&now>=d.release));
+ const status=d.id==='angle'?'Square up to the puck.':now<d.release?'Watch the release…':d.id==='skate'?['LEFT gate','RIGHT gate'][d.target]:d.total===Infinity?['Left','Center','Right'][d.target]+' target':['Left','Center','Right'][d.total===6&&d.id!=='reflex'?d.target*2:d.target]+' lane!';
+ const signal=document.querySelector('#drill-signal');if(signal.textContent!==status)signal.textContent=status;
+ frame=requestAnimationFrame(tickDrill);
+}
+function playDrill(index){
+ const d=drill,now=performance.now();
+ if(d.done||now>=d.limit||now>=d.deadline||now<d.release)return;
+ const at=positionAt(now,d.at,820);
+ const won=d.id==='angle'?at>=.38&&at<=.64:index===d.target;
+ if(won){d.score++;sound('puck');}
+ d.attempts++;
+ if(d.attempts>=d.total){finishDrill();return;}
+ setDrillRep(now);
+}
+function unlockRanks(){
+ if(rankIndex()>=3)unlock('allstar');
+ if(rankIndex()===4)unlock('legend');
+}
+function finishDrill(){
+ if(drill.done)return;
+ const d=drill;d.done=true;
+ d.passed=d.score>=(d.id==='shot'?8:d.id==='skate'?5:4);
+ d.xp=d.score?20+d.score*5+(d.passed?25:0):0;
+ career.xp+=d.xp;
+ if(d.passed)career.attrs[d.attr]++;
+ career.drillBests[d.id]=Math.max(d.score,career.drillBests[d.id]??0);
+ unlockRanks();persist();show('drillend');
+}
+function drillEndView(){
+ return '<section class="panel arena">'+heading('Training report',drill.label,(drill.passed?'Drill passed':'Drill complete')+' · '+drill.score+' successful reps')+'<p class="gold-text">+'+drill.xp+' XP'+(drill.passed?' · +1 '+statName[drill.attr]:'')+'</p>'+btn('view','Back to training','gold','data-id="training"')+'</section>';
+}
+function beginPro(team,salary){
+ career.team=team;career.salary=salary;career.year++;career.phase='regular';career.energy=100;career.hype=0;
+ resetSeason(career);unlockRanks();persist();show('hub');
+}
+function applyEvent(i){
+ if(career.event===null)return;
+ const e=events[career.event],effect=e[i?5:3];
+ if((effect.bucks??0)<-career.bucks)return;
+ applyEffects(effect);career.event=null;unlockRanks();persist();feedback(i?e[4]:e[2]);
+}
+function buyGear(id){
+ const g=gear.find(item=>item.id===id);
+ const owns=career.owned.includes(g.id);
+ if(career.equipped[g.slot]===id||!owns&&career.bucks<g.cost)return;
+ if(!owns){career.owned.push(id);career.bucks-=g.cost;}
+ career.equipped[g.slot]=id;persist();feedback(g.name+' equipped.');
+}
+function startQuiz(){
+ if(career.quizGame===career.games)return;
+ if(!career.quizOrder.length)career.quizOrder=shuffle(trivia.map((_,i)=>i));
+ const id=career.quizOrder.shift();
+ quiz={id,answers:shuffle(trivia[id].slice(1)),done:false};
+ show('quiz');
+}
+function saveAnswer(i){
+ if(quiz.done)return;
+ quiz.done=true;career.quizGame=career.games;quiz.correct=quiz.answers[i]===trivia[quiz.id][1];
+ if(quiz.correct){applyEffects({xp:45,chem:4});sound('cheer');}
+ unlockRanks();persist();render();
+}
+function revealDraft(){
+ if(career.draftTeam!==undefined)return;
+ const talent=career.junior.w>=5||career.junior.g+career.junior.a>=8;
+ const pool=teams.filter(t=>t.id!==career.preference);
+ career.draftTeam=talent||career.junior.gp===0||Math.random()<.65?career.preference:pool[int(0,pool.length-1)].id;
+ persist();sound('cheer');render();
+}
+const actions={
+ mute(){
+  muted=!muted;persist();
+  const button=document.querySelector('[data-action="mute"]');
+  button.textContent=muted?'Sound off':'Sound on';button.setAttribute('aria-pressed',String(!muted));
+  if(!muted) sound('cheer');
+ },
+ slots(){slot=-1;career=null;show('slots');},
+ new({index}){slot=Number(index);show('create');app.querySelector('[name="name"]').focus();},
+ resume({index}){slot=Number(index);career=slots[slot];show('hub');},
+ delete({index}){
+  if(window.confirm('Delete the career for '+slots[index].name+'? This cannot be undone.')){
+   slots[index]=null;persist();show('slots');
+  }
+ },
+ view({id}){show(id);},
+ next(){show(['draft','awards','contract'].includes(career.phase)?career.phase:career.phase==='free'?'contract':'pre');},
+ rest(){career.energy=clamp(career.energy+30,0,100);persist();feedback('Energy restored.');},
+ event({index}){applyEvent(Number(index));},
+ gear({id}){buyGear(id);},
+ drill({id}){if(career.energy>=12)startDrill(id);},
+ 'drill-key'({index}){playDrill(Number(index));},
+ 'quit-drill'(){finishDrill();},
+ quiz(){startQuiz();},
+ answer({index}){saveAnswer(Number(index));},
+ 'locker-up'(){
+  const cost=[450,900,1800][career.locker];if(cost===undefined||career.bucks<cost)return;
+  career.bucks-=cost;career.locker++;persist();feedback('Locker room upgraded.');
+ },
+ poster({id}){if(career.posters.includes(id)){career.poster=id;persist();feedback(posters[id]+' is on display.');}},
+ 'reveal-draft'(){revealDraft();},
+ 'sign-rookie'(){if(career.year===0&&career.draftTeam!==undefined){unlock('rookie');if(isGoalie())unlock('goalie');beginPro(career.draftTeam,140);}},
+ contracts(){career.phase='contract';persist();show('contract');},
+ hometown(){applyEffects({chem:15});beginPro(career.team,160);},
+ bigbag(){applyEffects({chem:-7});beginPro(career.team,260);},
+ free(){career.phase='free';career.offers??=shuffle(teams.filter(t=>t.id!==career.team).map(t=>t.id)).slice(0,3);persist();show('contract');},
+ 'cancel-free'(){career.phase='contract';persist();show('contract');},
+ sign({index}){
+  if(!career.offers.includes(Number(index)))return;
+  career.chem=50;delete career.offers;beginPro(Number(index),220);
+ },
+ 'start-match'({id}){startMatch(id);},
+ 'fast-game'(){
+  clearTimeout(timer);
+  if(match.shootout){startShootout();return;}
+  if(match.mode==='sim'){while(screen==='live'&&!match.settled){advanceGame();clearTimeout(timer);}}
+  else advanceGame();
+ },
+ moment({index}){playMoment(Number(index));}
+};
+document.addEventListener('click',event=>{
+ const button=event.target.closest('button[data-action]');
+ if(!button||button.disabled)return;
+ notice='';actions[button.dataset.action]?.(button.dataset);
+});
+app.addEventListener('submit',event=>{
+ if(event.target.id!=='player-form')return;
+ event.preventDefault();
+ const values=Object.fromEntries(new FormData(event.target));
+ if(!values.name.trim()){
+  const input=event.target.elements.name;
+  input.setCustomValidity('Enter a player name.');input.reportValidity();
+  input.addEventListener('input',()=>input.setCustomValidity(''),{once:true});
+  return;
+ }
+ career=createCareer(values);persist();show('hub');
+});
+document.addEventListener('keydown',event=>{
+ if(event.altKey||event.ctrlKey||event.metaKey||event.repeat)return;
+ const m=screen==='live'?match?.moment:null;
+ if(!m&&screen!=='drill')return;
+ const key=event.key;
+ let index={'1':0,'2':1,'3':2}[key];
+ if(screen==='drill'&&key==='ArrowLeft')index=0;
+ if(screen==='drill'&&key==='ArrowRight')index=['skate','glove','blocker','post'].includes(drill.id)?1:2;
+ if(key===' '&&(m&&['timing','mash'].includes(m.kind)||screen==='drill'&&drill.id==='angle'))index=1;
+ if(index===undefined)return;
+ event.preventDefault();
+ if(screen==='drill')playDrill(index);else playMoment(index);
+});
+render();
+</script>
+</body>
+</html>
